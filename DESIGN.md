@@ -6,38 +6,72 @@ This document serves as a comprehensive system design specification for the Conn
 
 ## 1. System Architecture & Component Decoupling
 
-The application is built using a **decoupled, modular multi-tier architecture** divided into three distinct projects. This separation of concerns ensures that the core game rules and artificial intelligence remain completely independent of how the game is visualized or run.
+The application is built using a **highly decoupled, modular multi-tier architecture** divided into one shared core engine library and five distinct frontend client applications. This strict separation of concerns guarantees that the core game rules and artificial intelligence remain completely independent of how the game is visualized, inputs are gathered, or platforms are targeted.
 
 ```mermaid
 graph TD;
-    subgraph Core Library [GameHeuristic.Core]
+    subgraph Shared Core Library [GameHeuristic.Core]
         A[Board Class]
         B[IHeuristic Interface]
         C[MinimaxAI Search Engine]
         D[HeuristicLoader Reflection]
     end
 
-    subgraph Desktop GUI [GameHeuristic.UI]
-        E[MainWindow XAML]
-        F[MainWindow Code-Behind]
-        G[DispatcherTimer Game Loop]
+    subgraph Client 1: Avalonia UI [GameHeuristic.UI]
+        E[Avalonia Window]
+        F[Direct Code-Behind]
+        G[DispatcherTimer Loop]
     end
 
-    subgraph Headless CLI [GameHeuristic.Tournament]
-        H[Program Entry]
-        I[CLI Tournament Runner]
+    subgraph Client 2: Console TUI [GameHeuristic.Terminal]
+        H[Retro ASCII TUI]
+        I[Synchronous Turn Loop]
+    end
+
+    subgraph Client 3: WinForms UI [GameHeuristic.WinForms]
+        J[Button Grid Form]
+        K[WinForms Timer Loop]
+    end
+
+    subgraph Client 4: Blazor Web [GameHeuristic.Blazor]
+        L[HTML / CSS Grid View]
+        M[System Timer Loop]
+    end
+
+    subgraph Client 5: Raylib 3D [GameHeuristic.Raylib]
+        N[Raylib 3D Spheres]
+        O[Hardware Frame Clock Loop]
+    end
+
+    subgraph Client 6: Headless CLI [GameHeuristic.Tournament]
+        P[CLI Program Entry]
+        Q[Rapid Tournament Runner]
     end
 
     E -.-> F
     F --> A & B & C & D
     H --> I
     I --> A & B & C & D
+    J -.-> K
+    K --> A & B & C & D
+    L -.-> M
+    M --> A & B & C & D
+    N -.-> O
+    O --> A & B & C & D
+    P --> Q
+    Q --> A & B & C & D
 ```
 
-### Decoupled Sub-systems:
-1. **`GameHeuristic.Core` (Class Library):** Encapsulates the complete game logic (grid representation, turn-taking, win/draw detection), the `IHeuristic` interface contract, and the alpha-beta minimax search tree engine. It has **zero dependencies** on terminal inputs or graphical elements.
-2. **`GameHeuristic.UI` (Desktop GUI - Avalonia):** A graphical, event-driven desktop application enabling human-vs-bot or bot-vs-bot visual matches, and interactive tournament monitoring.
-3. **`GameHeuristic.Tournament` (Console Application - CLI):** A high-performance, headless CLI runner to execute rapid round-robin tournaments across all registered heuristic submissions.
+### Shared Engine Layer:
+* **`GameHeuristic.Core` (Class Library):** Encapsulates the complete game logic (grid representation, turn-taking, win/draw detection), the `IHeuristic` interface contract, and the alpha-beta minimax search tree engine. It has **zero dependencies** on terminal inputs, graphical SDKs, web hosts, or hardware-accelerated libraries.
+
+### Swappable Presentation Tiers (Clients):
+1. **`GameHeuristic.UI` (Avalonia Desktop):** A graphical, event-driven desktop application using Avalonia. Renders the board directly using procedural XAML grid cells.
+2. **`GameHeuristic.Terminal` (Console TUI):** A retro, text-only interactive CLI application. Renders the board using color-coded ASCII shapes in the command prompt.
+3. **`GameHeuristic.WinForms` (Windows Forms):** A traditional desktop application. Renders the board as a grid of native Windows `Button` controls.
+4. **`GameHeuristic.Blazor` (HTML Web App):** A modern Web application running on ASP.NET Core. Renders the board as an interactive HTML grid styled with CSS.
+5. **`GameHeuristic.Raylib` (3D Hardware-Accelerated App):** A high-performance 3D desktop application. Renders the board using a 3D perspective camera and hardware-drawn **3D Spheres**.
+6. **`GameHeuristic.Tournament` (Headless CLI):** A high-speed runner designed to run round-robin tournaments sequentially at maximum clock speed.
 
 ### 📚 Learning Resources:
 * **Video:** [What is Separation of Concerns & Coupling in Software? (Developer Direction)](https://www.youtube.com/watch?v=0ZgXF6-rA24)
@@ -197,7 +231,7 @@ function minimax(node, depth, maximizingPlayer, alpha, beta) is
 
 ## 6. UI Engine: Single-Threaded Event Loop (Timer-Based)
 
-Rather than using advanced multi-threaded tasks, the visual interface implements a highly understandable **Single-Threaded Timer Loop** using a C# **`DispatcherTimer`**.
+Rather than using advanced multi-threaded tasks, the visual interfaces (Avalonia, WinForms, Blazor, and Raylib) implement **Single-Threaded Timer Loops** using platform-native clocks.
 
 ```mermaid
 sequenceDiagram
@@ -224,9 +258,9 @@ sequenceDiagram
 
 ### How the Timer Loop keeps the UI responsive:
 * Standard procedural loops freeze application interfaces because they lock the thread, preventing the operating system from updating the screen.
-* The `DispatcherTimer` resolves this by executing **one turn per tick**, then immediately yielding execution back to the operating system.
+* The timer loops (e.g. `DispatcherTimer` in Avalonia, `System.Windows.Forms.Timer` in WinForms, `System.Timers.Timer` in Blazor, and standard Frame Clocks in Raylib) resolve this by executing **one turn per tick**, then immediately yielding execution back to the operating system/browser.
 * Between ticks, the system is fully free to repaint the window, register mouse clicks, and adjust sliders.
-* This entirely eliminates the need for `Task.Run()`, multithreading locks, asynchronous syntax, and cross-thread exceptions, making the graphical frontend accessible to students.
+* This entirely eliminates the need for `Task.Run()`, multithreading locks, asynchronous syntax, and cross-thread exceptions, making the graphical frontends accessible to students.
 
 ---
 
@@ -258,7 +292,7 @@ GameHeuristic/
 ├── GEMINI.md                       # Instructions on building submission classes
 │
 └── src/
-    ├── GameHeuristic.Core/          # 1. CORE CLASS LIBRARY (Decoupled Game Rules)
+    ├── GameHeuristic.Core/          # CORE ENGINE (Shared Class Library)
     │   ├── Board.cs                 # Tracks grid state, validates wins
     │   ├── Models.cs                # Player and GameState enums
     │   ├── MinimaxAI.cs             # Adversarial Search (Alpha-Beta pruning)
@@ -268,11 +302,24 @@ GameHeuristic/
     │       ├── Teacher/             # Developer Benchmark Bosses (Expert)
     │       └── Y2026/               # Class of 2026 Student Submissions
     │
-    ├── GameHeuristic.UI/            # 2. graphical desktop gui (Avalonia)
+    ├── GameHeuristic.UI/            # CLIENT 1: Avalonia Desktop GUI
     │   ├── App.axaml / App.axaml.cs # Application entrypoint
     │   ├── MainWindow.axaml         # Simplified UI layouts (No bindings)
     │   └── MainWindow.axaml.cs      # Direct manipulation & Timer-based loop
     │
-    └── GameHeuristic.Tournament/    # 3. HIGH-SPEED CLI RUNNER (Headless)
+    ├── GameHeuristic.Terminal/      # CLIENT 2: Retro Console ASCII TUI
+    │   └── Program.cs               # Color-coded ASCII board drawing & loop
+    │
+    ├── GameHeuristic.WinForms/      # CLIENT 3: Windows Forms UI (net8.0-windows)
+    │   └── Program.cs               # Circular painted buttons, native WinForms timer
+    │
+    ├── GameHeuristic.Blazor/        # CLIENT 4: ASP.NET Core Blazor Web App
+    │   ├── Program.cs               # Minimal WebServer boot config
+    │   └── Components/App.razor     # Self-contained HTML/CSS & Blazor timer loop
+    │
+    ├── GameHeuristic.Raylib/        # CLIENT 5: Hardware 3D Game Engine (Raylib-cs)
+    │   └── Program.cs               # 3D perspective camera, 3D spheres, frame-clock loop
+    │
+    └── GameHeuristic.Tournament/    # CLIENT 6: High-Speed CLI Tournament Runner
         └── Program.cs               # Parses command-line groups and runs rapid tournaments
 ```
