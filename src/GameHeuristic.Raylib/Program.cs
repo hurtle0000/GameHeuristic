@@ -35,15 +35,19 @@ class Program
 
         // 1. Dynamic Heuristic Loading (Reflection)
         List<IHeuristic> heuristics = HeuristicLoader.LoadHeuristics();
+
+        // 2. Player Selection Settings (0 represents Human, 1..N represents the loaded bots)
+        int p1Selection = 0; // Player 1 (Red) defaults to Human
+        int p2Selection = 1; // Player 2 (Yellow) defaults to the first available bot (e.g. Expert)
         
-        // Grab two default bots for the demo (Expert vs Student 2026)
-        IHeuristic h1 = heuristics.FirstOrDefault(h => h.Name.Contains("Teacher")) ?? heuristics[0];
-        IHeuristic h2 = heuristics.FirstOrDefault(h => h.Name.Contains("Student")) ?? heuristics[Math.Min(1, heuristics.Count - 1)];
+        // Find default selections based on names if possible
+        for (int i = 0; i < heuristics.Count; i++)
+        {
+            if (heuristics[i].Name.Contains("Teacher") || heuristics[i].Name.Contains("Expert"))
+                p2Selection = i + 1;
+        }
 
-        MinimaxAI ai1 = new MinimaxAI(h1, depth: 6);
-        MinimaxAI ai2 = new MinimaxAI(h2, depth: 6);
-
-        // 2. Initialize Core Board
+        // Initialize Core Board
         Board board = new Board();
         Player currentPlayer = Player.Red;
         GameState gameState = GameState.Ongoing;
@@ -54,11 +58,14 @@ class Program
         // Currently active falling piece animation
         FallingPiece? activeAnimation = null;
 
-        // 3. Set up 3D Perspective Camera
+        // Tracks the coordinates of the winning line to trigger flashing
+        List<Tuple<int, int>> winningLine = new List<Tuple<int, int>>();
+
+        // 3. Set up 3D Perspective Camera (Pulled back for a wider view)
         Camera3D camera = new Camera3D
         {
-            Position = new Vector3(0.0f, 1.8f, 9.5f), // Looking slightly down
-            Target = new Vector3(0.0f, -0.5f, 0.0f),  // Center of our board grid
+            Position = new Vector3(0.0f, 2.0f, 11.5f), // Pulled back from 9.5f to 11.5f
+            Target = new Vector3(0.0f, -0.5f, 0.0f),   // Center of our board grid
             Up = new Vector3(0.0f, 1.0f, 0.0f),
             FovY = 45.0f,
             Projection = CameraProjection.Perspective
@@ -74,7 +81,28 @@ class Program
             float dt = Raylib.GetFrameTime();
             double currentTime = Raylib.GetTime();
 
-            // 5. Physics Update Loop
+            // ================= DYNAMIC CONTROLS & INTERACTIVE SELECTIONS =================
+            // Cycle Player 1 (Red) using Key '1'
+            if (Raylib.IsKeyPressed(KeyboardKey.One))
+            {
+                p1Selection = (p1Selection + 1) % (heuristics.Count + 1);
+                ResetMatch(ref board, ref settledGrid, ref activeAnimation, ref currentPlayer, ref gameState, ref lastTurnTime, ref winningLine);
+            }
+
+            // Cycle Player 2 (Yellow) using Key '2'
+            if (Raylib.IsKeyPressed(KeyboardKey.Two))
+            {
+                p2Selection = (p2Selection + 1) % (heuristics.Count + 1);
+                ResetMatch(ref board, ref settledGrid, ref activeAnimation, ref currentPlayer, ref gameState, ref lastTurnTime, ref winningLine);
+            }
+
+            // Manual spacebar match reset
+            if (Raylib.IsKeyPressed(KeyboardKey.Space))
+            {
+                ResetMatch(ref board, ref settledGrid, ref activeAnimation, ref currentPlayer, ref gameState, ref lastTurnTime, ref winningLine);
+            }
+
+            // ================= PHYSICS ANIMATION UPDATE LOOP =================
             if (activeAnimation != null)
             {
                 // Euler integration: apply gravity to velocity
@@ -108,93 +136,90 @@ class Program
                 }
             }
 
-            // 6. Turn Logic Trigger
-            if (gameState == GameState.Ongoing && activeAnimation == null && (currentTime - lastTurnTime >= turnDelay))
+            // ================= GAME TURN LOGIC =================
+            if (gameState == GameState.Ongoing && activeAnimation == null)
             {
-                MinimaxAI activeAI = currentPlayer == Player.Red ? ai1 : ai2;
-                int move = activeAI.GetBestMove(board, currentPlayer);
+                bool isRedTurn = currentPlayer == Player.Red;
+                int currentSelection = isRedTurn ? p1Selection : p2Selection;
 
-                if (move == -1 || !board.CanMakeMove(move))
+                if (currentSelection == 0)
                 {
-                    // Forfeit
-                    gameState = currentPlayer == Player.Red ? GameState.YellowWin : GameState.RedWin;
-                }
-                else
-                {
-                    // Determine which row it will land on in the Board grid
-                    int landingRow = -1;
-                    for (int r = Board.Rows - 1; r >= 0; r--)
+                    // ---------------- HUMAN TURN CONTROLS ----------------
+                    // Option A: Mouse Clicks
+                    if (Raylib.IsMouseButtonPressed(MouseButton.Left))
                     {
-                        if (board.GetPiece(r, move) == Player.None)
+                        Vector2 mousePos = Raylib.GetMousePosition();
+                        float colWidth = 72.0f; // Approx column width in pixels on screen
+                        float boardCenterX = screenWidth / 2.0f;
+                        int col = (int)Math.Round((mousePos.X - boardCenterX) / colWidth) + 3;
+
+                        if (col >= 0 && col < Board.Columns)
                         {
-                            landingRow = r;
-                            break;
+                            if (board.CanMakeMove(col))
+                            {
+                                MakeMoveAndAnimate(col, board, currentPlayer, ref activeAnimation, ref gameState, ref currentPlayer, ref winningLine);
+                            }
                         }
                     }
 
-                    // Apply the move to the core logical Board
-                    board.MakeMove(move, currentPlayer);
-
-                    // Launch the fall animation instead of instantly populating settledGrid
-                    activeAnimation = new FallingPiece
+                    // Option B: Keyboard keys '0'..'6'
+                    for (int col = 0; col < Board.Columns; col++)
                     {
-                        Row = landingRow,
-                        Col = move,
-                        Color = currentPlayer,
-                        CurrentY = StartY,
-                        TargetY = 2.0f - landingRow * 1.0f, // Match 3D layout coordinates
-                        Velocity = 0.0f
-                    };
+                        if (Raylib.IsKeyPressed((KeyboardKey)((int)KeyboardKey.Zero + col)))
+                        {
+                            if (board.CanMakeMove(col))
+                            {
+                                MakeMoveAndAnimate(col, board, currentPlayer, ref activeAnimation, ref gameState, ref currentPlayer, ref winningLine);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // ---------------- AI TURN CONTROLS ----------------
+                    if (currentTime - lastTurnTime >= turnDelay)
+                    {
+                        IHeuristic activeHeuristic = heuristics[currentSelection - 1];
+                        MinimaxAI ai = new MinimaxAI(activeHeuristic, depth: 6);
+                        
+                        int move = ai.GetBestMove(board, currentPlayer);
 
-                    // Check if game is over
-                    gameState = board.CheckGameState();
-
-                    // Swap player turns
-                    currentPlayer = currentPlayer == Player.Red ? Player.Yellow : Player.Red;
+                        if (move == -1 || !board.CanMakeMove(move))
+                        {
+                            // Forfeit
+                            gameState = currentPlayer == Player.Red ? GameState.YellowWin : GameState.RedWin;
+                        }
+                        else
+                        {
+                            MakeMoveAndAnimate(move, board, currentPlayer, ref activeAnimation, ref gameState, ref currentPlayer, ref winningLine);
+                        }
+                    }
                 }
             }
 
-            // Keyboard Spacebar input to manually reset the match
-            if (Raylib.IsKeyPressed(KeyboardKey.Space))
-            {
-                board = new Board();
-                settledGrid = new Player[Board.Rows, Board.Columns];
-                activeAnimation = null;
-                currentPlayer = Player.Red;
-                gameState = GameState.Ongoing;
-                lastTurnTime = Raylib.GetTime();
-            }
-
-            // 7. Begin 3D Graphics Drawing
+            // ================= 3D GRAPHICS DRAWING =================
             Raylib.BeginDrawing();
             Raylib.ClearBackground(new Color(25, 30, 45, 255)); // Cool dark navy slate
 
             Raylib.BeginMode3D(camera);
 
             // ================= RACK MESH LATTICE STRUCTURE =================
-            // Instead of a single solid block, we draw the rack procedurally using overlapping
-            // vertical and horizontal beams to make it a true hollow mesh structure.
+            // Procedurally constructed rack using overlapping rectangular pillars/beams
             Color rackColor = new Color(20, 60, 160, 255); // Rich deep blue
             Color rackWireColor = new Color(10, 30, 80, 255);
 
             // A. Draw 8 Vertical Pillars (separating the 7 columns)
-            // Pillar spacing: cols are centered around X=0, from c=0..6 mapped to x=-3..3
-            // So we place 8 pillars at x = -3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5
             for (int i = 0; i <= 7; i++)
             {
                 float x = -3.5f + i * 1.0f;
-                // Positioned at X=x, Y=-0.5, Z=0. Dimensions: width=0.15, height=6.0, depth=0.4
                 Raylib.DrawCube(new Vector3(x, -0.5f, 0.0f), 0.16f, 6.0f, 0.4f, rackColor);
                 Raylib.DrawCubeWires(new Vector3(x, -0.5f, 0.0f), 0.16f, 6.0f, 0.4f, rackWireColor);
             }
 
             // B. Draw 7 Horizontal Beams (separating the 6 rows)
-            // Beam spacing: rows are centered around Y=-0.5, from r=0..5 mapped to y=2..-3
-            // So we place 7 beams at y = 2.5, 1.5, 0.5, -0.5, -1.5, -2.5, -3.5
             for (int i = 0; i <= 6; i++)
             {
                 float y = 2.5f - i * 1.0f;
-                // Positioned at X=0, Y=y, Z=0. Dimensions: width=7.2, height=0.15, depth=0.4
                 Raylib.DrawCube(new Vector3(0.0f, y, 0.0f), 7.2f, 0.16f, 0.4f, rackColor);
                 Raylib.DrawCubeWires(new Vector3(0.0f, y, 0.0f), 7.2f, 0.16f, 0.4f, rackWireColor);
             }
@@ -205,7 +230,7 @@ class Program
             Raylib.DrawCube(new Vector3(3.5f, -3.7f, 0.0f), 0.5f, 0.4f, 2.0f, rackColor);
             Raylib.DrawCubeWires(new Vector3(3.5f, -3.7f, 0.0f), 0.5f, 0.4f, 2.0f, rackWireColor);
 
-            // ================= 3D TOKENS (FLAT COINS/DISCS) =================
+            // ================= 3D FLAT TOKENS (COINS/DISCS) =================
             // A. Draw Settled Pieces on the Board
             for (int r = 0; r < Board.Rows; r++)
             {
@@ -217,36 +242,56 @@ class Program
                     Player piece = settledGrid[r, c];
                     if (piece != Player.None)
                     {
-                        Draw3DDisc(new Vector3(x, y, 0.0f), piece);
+                        // Check if this token belongs to the winning sequence
+                        bool isWinningToken = winningLine.Any(t => t.Item1 == r && t.Item2 == c);
+                        // Flashes neon-white every 200ms
+                        bool shouldFlash = isWinningToken && ((int)(Raylib.GetTime() * 5) % 2 == 0);
+
+                        Draw3DDisc(new Vector3(x, y, 0.0f), piece, shouldFlash);
                     }
                 }
             }
 
-            // B. Draw Active Falling Piece Animation
+            // B. Draw Active Falling Piece Animation (Never flashes as it is active)
             if (activeAnimation != null)
             {
                 float animX = (activeAnimation.Col - 3.0f) * 1.0f;
-                Draw3DDisc(new Vector3(animX, activeAnimation.CurrentY, 0.0f), activeAnimation.Color);
+                Draw3DDisc(new Vector3(animX, activeAnimation.CurrentY, 0.0f), activeAnimation.Color, false);
             }
 
             Raylib.EndMode3D();
 
-            // 8. 2D HUD/Text Overlays
-            Raylib.DrawText("3D ARCADIAN CONNECT 4 (RAYLIB)", 20, 20, 24, Color.White);
-            Raylib.DrawText($"Red: {h1.Name}", 20, 60, 18, Color.Red);
-            Raylib.DrawText($"Yellow: {h2.Name}", 20, 95, 18, Color.Yellow);
+            // ================= 2D HUD / TEXT OVERLAYS =================
+            Raylib.DrawText("3D CONNECT 4 ARCADIAN STAGE", 20, 20, 24, Color.White);
 
-            // Game State HUD Label
+            // Dynamic Player 1 Select Label
+            string p1NameText = p1Selection == 0 ? "HUMAN PLAYER" : heuristics[p1Selection - 1].Name;
+            Raylib.DrawText($"[1] Player 1 (Red): {p1NameText}", 20, 60, 18, Color.Red);
+
+            // Dynamic Player 2 Select Label
+            string p2NameText = p2Selection == 0 ? "HUMAN PLAYER" : heuristics[p2Selection - 1].Name;
+            Raylib.DrawText($"[2] Player 2 (Yellow): {p2NameText}", 20, 95, 18, Color.Yellow);
+
+            // Turn Indicator / Animation Label
             if (gameState == GameState.Ongoing)
             {
-                string turnText = currentPlayer == Player.Red ? "RED AI Turn..." : "YELLOW AI Turn...";
+                string turnText = currentPlayer == Player.Red ? "RED Player Turn..." : "YELLOW Player Turn...";
                 Color turnColor = currentPlayer == Player.Red ? Color.Red : Color.Yellow;
+                
                 if (activeAnimation != null)
                 {
-                    turnText = "GRAVITY DROP ANIMATION...";
+                    turnText = "GRAVITY DROP PHYSICS TICK...";
                     turnColor = Color.LightGray;
                 }
-                Raylib.DrawText(turnText, 20, screenHeight - 60, 22, turnColor);
+                else
+                {
+                    bool currentIsHuman = (currentPlayer == Player.Red && p1Selection == 0) || (currentPlayer == Player.Yellow && p2Selection == 0);
+                    if (currentIsHuman)
+                    {
+                        turnText += " (Click Column or Press [0-6] to Play)";
+                    }
+                }
+                Raylib.DrawText(turnText, 20, screenHeight - 60, 20, turnColor);
             }
             else
             {
@@ -260,7 +305,12 @@ class Program
                 Raylib.DrawText(endText, 20, screenHeight - 60, 32, endColor);
             }
 
-            Raylib.DrawText("Press [SPACEBAR] to Restart", screenWidth - 300, 20, 16, Color.LightGray);
+            Raylib.DrawText("Controls:", screenWidth - 280, 60, 16, Color.LightGray);
+            Raylib.DrawText(" - Press [1] to cycle Red Player", screenWidth - 280, 85, 14, Color.Gray);
+            Raylib.DrawText(" - Press [2] to cycle Yellow Player", screenWidth - 280, 105, 14, Color.Gray);
+            Raylib.DrawText(" - Click Column or Press [0-6] to play", screenWidth - 280, 125, 14, Color.Gray);
+            Raylib.DrawText(" - Press [SPACE] to Restart Match", screenWidth - 280, 145, 14, Color.Gray);
+
             Raylib.EndDrawing();
         }
 
@@ -268,13 +318,152 @@ class Program
     }
 
     /// <summary>
-    /// Procedurally draws a flat 3D coin/disc facing the camera using DrawCylinderEx
-    /// aligned parallel to the Z-axis.
+    /// Resets the game board and animation states
     /// </summary>
-    static void Draw3DDisc(Vector3 center, Player color)
+    static void ResetMatch(ref Board board, ref Player[,] settledGrid, ref FallingPiece? activeAnimation, ref Player currentPlayer, ref GameState gameState, ref double lastTurnTime, ref List<Tuple<int, int>> winningLine)
     {
-        Color discColor = color == Player.Red ? Color.Red : Color.Yellow;
-        Color wireColor = color == Player.Red ? Color.Maroon : Color.Gold;
+        board = new Board();
+        settledGrid = new Player[Board.Rows, Board.Columns];
+        activeAnimation = null;
+        currentPlayer = Player.Red;
+        gameState = GameState.Ongoing;
+        lastTurnTime = Raylib.GetTime();
+        winningLine.Clear();
+    }
+
+    /// <summary>
+    /// Commits a column choice, calculates landing row coordinates, and launches the fall animation.
+    /// </summary>
+    static void MakeMoveAndAnimate(int col, Board board, Player player, ref FallingPiece? activeAnimation, ref GameState gameState, ref Player nextPlayer, ref List<Tuple<int, int>> winningLine)
+    {
+        int landingRow = -1;
+        for (int r = Board.Rows - 1; r >= 0; r--)
+        {
+            if (board.GetPiece(r, col) == Player.None)
+            {
+                landingRow = r;
+                break;
+            }
+        }
+
+        board.MakeMove(col, player);
+
+        activeAnimation = new FallingPiece
+        {
+            Row = landingRow,
+            Col = col,
+            Color = player,
+            CurrentY = StartY,
+            TargetY = 2.0f - landingRow * 1.0f,
+            Velocity = 0.0f
+        };
+
+        gameState = board.CheckGameState();
+        if (gameState != GameState.Ongoing && (gameState == GameState.RedWin || gameState == GameState.YellowWin))
+        {
+            winningLine = GetWinningLine(board);
+        }
+
+        nextPlayer = player == Player.Red ? Player.Yellow : Player.Red;
+    }
+
+    /// <summary>
+    /// Traverses the logical board state to return the exact four cell coordinates that formed the winning line.
+    /// </summary>
+    static List<Tuple<int, int>> GetWinningLine(Board board)
+    {
+        var line = new List<Tuple<int, int>>();
+
+        // Check horizontal
+        for (int r = 0; r < Board.Rows; r++)
+        {
+            for (int c = 0; c <= Board.Columns - 4; c++)
+            {
+                Player p = board.GetPiece(r, c);
+                if (p != Player.None && p == board.GetPiece(r, c + 1) && p == board.GetPiece(r, c + 2) && p == board.GetPiece(r, c + 3))
+                {
+                    line.Add(Tuple.Create(r, c));
+                    line.Add(Tuple.Create(r, c + 1));
+                    line.Add(Tuple.Create(r, c + 2));
+                    line.Add(Tuple.Create(r, c + 3));
+                    return line;
+                }
+            }
+        }
+
+        // Check vertical
+        for (int r = 0; r <= Board.Rows - 4; r++)
+        {
+            for (int c = 0; c < Board.Columns; c++)
+            {
+                Player p = board.GetPiece(r, c);
+                if (p != Player.None && p == board.GetPiece(r + 1, c) && p == board.GetPiece(r + 2, c) && p == board.GetPiece(r + 3, c))
+                {
+                    line.Add(Tuple.Create(r, c));
+                    line.Add(Tuple.Create(r + 1, c));
+                    line.Add(Tuple.Create(r + 2, c));
+                    line.Add(Tuple.Create(r + 3, c));
+                    return line;
+                }
+            }
+        }
+
+        // Check diagonal (down-right)
+        for (int r = 0; r <= Board.Rows - 4; r++)
+        {
+            for (int c = 0; c <= Board.Columns - 4; c++)
+            {
+                Player p = board.GetPiece(r, c);
+                if (p != Player.None && p == board.GetPiece(r + 1, c + 1) && p == board.GetPiece(r + 2, c + 2) && p == board.GetPiece(r + 3, c + 3))
+                {
+                    line.Add(Tuple.Create(r, c));
+                    line.Add(Tuple.Create(r + 1, c + 1));
+                    line.Add(Tuple.Create(r + 2, c + 2));
+                    line.Add(Tuple.Create(r + 3, c + 3));
+                    return line;
+                }
+            }
+        }
+
+        // Check diagonal (up-right)
+        for (int r = 3; r < Board.Rows; r++)
+        {
+            for (int c = 0; c <= Board.Columns - 4; c++)
+            {
+                Player p = board.GetPiece(r, c);
+                if (p != Player.None && p == board.GetPiece(r - 1, c + 1) && p == board.GetPiece(r - 2, c + 2) && p == board.GetPiece(r - 3, c + 3))
+                {
+                    line.Add(Tuple.Create(r, c));
+                    line.Add(Tuple.Create(r - 1, c + 1));
+                    line.Add(Tuple.Create(r - 2, c + 2));
+                    line.Add(Tuple.Create(r - 3, c + 3));
+                    return line;
+                }
+            }
+        }
+
+        return line;
+    }
+
+    /// <summary>
+    /// Procedurally draws a flat 3D coin/disc facing the camera using DrawCylinderEx.
+    /// If flashing is active, colors it in bright neon white.
+    /// </summary>
+    static void Draw3DDisc(Vector3 center, Player color, bool flash)
+    {
+        Color discColor;
+        Color wireColor;
+
+        if (flash)
+        {
+            discColor = Color.White;
+            wireColor = Color.SkyBlue;
+        }
+        else
+        {
+            discColor = color == Player.Red ? Color.Red : Color.Yellow;
+            wireColor = color == Player.Red ? Color.Maroon : Color.Gold;
+        }
 
         // Position start/end points along the Z axis centered on the coordinate
         Vector3 startPoint = new Vector3(center.X, center.Y, -0.15f);
