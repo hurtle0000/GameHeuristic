@@ -13,7 +13,18 @@
             <Grid ColumnDefinitions="*, 250">
                 <!-- Game Board Grid -->
                 <Border Grid.Column="0" Background="#2b579a" Margin="20" CornerRadius="10">
-                    <UniformGrid Name="BoardGrid" Rows="6" Columns="7" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10" />
+                    <Grid RowDefinitions="Auto, *">
+                        <UniformGrid Grid.Row="0" Name="ScoreHeaderGrid" Columns="7" Height="35" Margin="15,10,15,0" VerticalAlignment="Center">
+                            <TextBlock Name="ColScore0" Text="" Foreground="White" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Name="ColScore1" Text="" Foreground="White" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Name="ColScore2" Text="" Foreground="White" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Name="ColScore3" Text="" Foreground="White" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Name="ColScore4" Text="" Foreground="White" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Name="ColScore5" Text="" Foreground="White" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Name="ColScore6" Text="" Foreground="White" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </UniformGrid>
+                        <UniformGrid Grid.Row="1" Name="BoardGrid" Rows="6" Columns="7" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10" />
+                    </Grid>
                 </Border>
 
                 <!-- Controls -->

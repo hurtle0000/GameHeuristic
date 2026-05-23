@@ -167,43 +167,131 @@ public partial class MainWindow : Window
 
     /// <summary>
     /// The timer tick represents a single game turn.
-    /// Runs entirely on the main UI thread to avoid complex multithreading code.
+    /// Runs AI searches on a background task so the Avalonia UI remains fully responsive.
     /// </summary>
     private void GameTimer_Tick(object? sender, EventArgs e)
     {
-        _gameTimer?.Stop(); // Temporarily stop to prevent overlapping ticks if AI computation takes time
+        _gameTimer?.Stop(); // Temporarily stop to prevent overlapping ticks
 
-        int move = (_currentPlayer == Player.Red ? _ai1! : _ai2!).GetBestMove(_board, _currentPlayer);
+        MinimaxAI activeAi = _currentPlayer == Player.Red ? _ai1! : _ai2!;
 
-        if (move == -1 || !_board.MakeMove(move, _currentPlayer))
+        // Clear UI scores before starting new calculation
+        ClearScoresUI();
+
+        // Subscribe to live column score updates
+        activeAi.OnColumnEvaluated = (col, score) =>
         {
-            StatusText.Text = $"{(_currentPlayer == Player.Red ? "Red" : "Yellow")} forfeited the game!";
-            CleanupGame();
-            return;
+            Dispatcher.UIThread.Post(() =>
+            {
+                UpdateScoreUI(col, score);
+            });
+        };
+
+        // Capture current state to ensure thread-safety if reset during execution
+        Board startBoard = _board;
+        Player startPlayer = _currentPlayer;
+
+        StatusText.Text = $"{(_currentPlayer == Player.Red ? "Red" : "Yellow")} is thinking...";
+
+        Task.Run(() =>
+        {
+            int move = activeAi.GetBestMove(startBoard, startPlayer);
+
+            Dispatcher.UIThread.Post(() =>
+            {
+                // Verify that game hasn't been reset in the meantime
+                if (_board != startBoard || _currentPlayer != startPlayer || _gameTimer == null)
+                    return;
+
+                if (move == -1 || !_board.MakeMove(move, _currentPlayer))
+                {
+                    StatusText.Text = $"{(_currentPlayer == Player.Red ? "Red" : "Yellow")} forfeited the game!";
+                    CleanupGame();
+                    return;
+                }
+
+                UpdateBoardUI();
+
+                GameState state = _board.CheckGameState();
+                if (state != GameState.Ongoing)
+                {
+                    if (state == GameState.Draw)
+                        StatusText.Text = "Game ended in a draw!";
+                    else
+                    {
+                        StatusText.Text = $"{(_currentPlayer == Player.Red ? "Red" : "Yellow")} wins!";
+                        HighlightWinningLine();
+                    }
+                    CleanupGame();
+                    return;
+                }
+
+                // Switch turns
+                _currentPlayer = _currentPlayer == Player.Red ? Player.Yellow : Player.Red;
+                StatusText.Text = $"{(_currentPlayer == Player.Red ? "Red" : "Yellow")}'s turn...";
+
+                // Restart timer, dynamically reading the interval in case the user adjusted the slider
+                if (_gameTimer != null)
+                {
+                    _gameTimer.Interval = TimeSpan.FromMilliseconds(Math.Max(50, DelaySlider.Value));
+                    _gameTimer.Start();
+                }
+            });
+        });
+    }
+
+    private void UpdateScoreUI(int col, double score)
+    {
+        TextBlock[] labels = { ColScore0, ColScore1, ColScore2, ColScore3, ColScore4, ColScore5, ColScore6 };
+        if (col < 0 || col >= labels.Length) return;
+
+        if (double.IsNaN(score))
+        {
+            labels[col].Text = "-";
+            labels[col].Foreground = Brushes.LightGray;
         }
-
-        UpdateBoardUI();
-
-        GameState state = _board.CheckGameState();
-        if (state != GameState.Ongoing)
+        else
         {
-            if (state == GameState.Draw)
-                StatusText.Text = "Game ended in a draw!";
+            string scoreText = score.ToString("F1");
+            if (score > 900000)
+            {
+                scoreText = "WIN";
+                labels[col].Foreground = Brushes.LightGreen;
+            }
+            else if (score < -900000)
+            {
+                scoreText = "LOSS";
+                labels[col].Foreground = Brushes.OrangeRed;
+            }
             else
-                StatusText.Text = $"{(_currentPlayer == Player.Red ? "Red" : "Yellow")} wins!";
-            CleanupGame();
-            return;
+            {
+                labels[col].Foreground = score > 0 ? Brushes.LightGreen : (score < 0 ? Brushes.LightPink : Brushes.White);
+            }
+            labels[col].Text = scoreText;
         }
+    }
 
-        // Switch turns
-        _currentPlayer = _currentPlayer == Player.Red ? Player.Yellow : Player.Red;
-        StatusText.Text = $"{(_currentPlayer == Player.Red ? "Red" : "Yellow")}'s turn...";
-
-        // Restart timer, dynamically reading the interval in case the user adjusted the slider
-        if (_gameTimer != null)
+    private void ClearScoresUI()
+    {
+        TextBlock[] labels = { ColScore0, ColScore1, ColScore2, ColScore3, ColScore4, ColScore5, ColScore6 };
+        foreach (var lbl in labels)
         {
-            _gameTimer.Interval = TimeSpan.FromMilliseconds(Math.Max(50, DelaySlider.Value));
-            _gameTimer.Start();
+            lbl.Text = "";
+        }
+    }
+
+    private void HighlightWinningLine()
+    {
+        var line = _board.GetWinningLine();
+        foreach (var cell in line)
+        {
+            int r = cell.Row;
+            int c = cell.Col;
+            if (r >= 0 && r < Board.Rows && c >= 0 && c < Board.Columns)
+            {
+                _uiCells[r, c].Stroke = Brushes.Gold;
+                _uiCells[r, c].StrokeThickness = 4;
+            }
         }
     }
 
@@ -224,6 +312,15 @@ public partial class MainWindow : Window
     private void ResetBoard()
     {
         _board = new Board();
+        ClearScoresUI();
+        for (int r = 0; r < Board.Rows; r++)
+        {
+            for (int c = 0; c < Board.Columns; c++)
+            {
+                _uiCells[r, c].Stroke = Brushes.Black;
+                _uiCells[r, c].StrokeThickness = 1;
+            }
+        }
         UpdateBoardUI();
     }
 

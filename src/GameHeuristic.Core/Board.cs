@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace GameHeuristic.Core;
 
 public class Board
@@ -26,25 +28,34 @@ public class Board
         return _grid[0, col] == Player.None;
     }
 
-    public bool MakeMove(int col, Player player)
+    public int GetLandingRow(int col)
     {
-        if (!CanMakeMove(col)) return false;
-
+        if (col < 0 || col >= Columns) return -1;
         for (int r = Rows - 1; r >= 0; r--)
         {
             if (_grid[r, col] == Player.None)
             {
-                _grid[r, col] = player;
-                return true;
+                return r;
             }
         }
-        return false;
+        return -1;
+    }
+
+    public bool MakeMove(int col, Player player)
+    {
+        int landingRow = GetLandingRow(col);
+        if (landingRow == -1) return false;
+
+        _grid[landingRow, col] = player;
+        return true;
     }
 
     public Board Clone() => new Board(_grid);
 
-    public GameState CheckGameState()
+    public List<(int Row, int Col)> GetWinningLine()
     {
+        var line = new List<(int Row, int Col)>();
+
         // Check horizontal
         for (int r = 0; r < Rows; r++)
         {
@@ -52,7 +63,13 @@ public class Board
             {
                 Player p = _grid[r, c];
                 if (p != Player.None && p == _grid[r, c + 1] && p == _grid[r, c + 2] && p == _grid[r, c + 3])
-                    return p == Player.Red ? GameState.RedWin : GameState.YellowWin;
+                {
+                    line.Add((r, c));
+                    line.Add((r, c + 1));
+                    line.Add((r, c + 2));
+                    line.Add((r, c + 3));
+                    return line;
+                }
             }
         }
 
@@ -63,7 +80,13 @@ public class Board
             {
                 Player p = _grid[r, c];
                 if (p != Player.None && p == _grid[r + 1, c] && p == _grid[r + 2, c] && p == _grid[r + 3, c])
-                    return p == Player.Red ? GameState.RedWin : GameState.YellowWin;
+                {
+                    line.Add((r, c));
+                    line.Add((r + 1, c));
+                    line.Add((r + 2, c));
+                    line.Add((r + 3, c));
+                    return line;
+                }
             }
         }
 
@@ -74,7 +97,13 @@ public class Board
             {
                 Player p = _grid[r, c];
                 if (p != Player.None && p == _grid[r + 1, c + 1] && p == _grid[r + 2, c + 2] && p == _grid[r + 3, c + 3])
-                    return p == Player.Red ? GameState.RedWin : GameState.YellowWin;
+                {
+                    line.Add((r, c));
+                    line.Add((r + 1, c + 1));
+                    line.Add((r + 2, c + 2));
+                    line.Add((r + 3, c + 3));
+                    return line;
+                }
             }
         }
 
@@ -85,8 +114,26 @@ public class Board
             {
                 Player p = _grid[r, c];
                 if (p != Player.None && p == _grid[r - 1, c + 1] && p == _grid[r - 2, c + 2] && p == _grid[r - 3, c + 3])
-                    return p == Player.Red ? GameState.RedWin : GameState.YellowWin;
+                {
+                    line.Add((r, c));
+                    line.Add((r - 1, c + 1));
+                    line.Add((r - 2, c + 2));
+                    line.Add((r - 3, c + 3));
+                    return line;
+                }
             }
+        }
+
+        return line;
+    }
+
+    public GameState CheckGameState()
+    {
+        var winLine = GetWinningLine();
+        if (winLine.Count > 0)
+        {
+            Player p = _grid[winLine[0].Row, winLine[0].Col];
+            return p == Player.Red ? GameState.RedWin : GameState.YellowWin;
         }
 
         // Check for draw

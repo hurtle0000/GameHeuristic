@@ -7,16 +7,17 @@ public class MinimaxAI
     private readonly IHeuristic _heuristic;
     private readonly int _depth;
 
+    public Action<int, double>? OnColumnEvaluated { get; set; }
+
     public MinimaxAI(IHeuristic heuristic, int depth = 6)
     {
         _heuristic = heuristic;
         _depth = depth;
     }
 
-    public int GetBestMove(Board board, Player player)
+    public double[] GetColumnScores(Board board, Player player)
     {
-        int bestMove = -1;
-        double bestValue = double.NegativeInfinity;
+        double[] scores = new double[Board.Columns];
         Player opponent = player == Player.Red ? Player.Yellow : Player.Red;
 
         for (int col = 0; col < Board.Columns; col++)
@@ -25,12 +26,44 @@ public class MinimaxAI
             {
                 Board nextBoard = board.Clone();
                 nextBoard.MakeMove(col, player);
-                double moveValue = Minimax(nextBoard, _depth - 1, false, double.NegativeInfinity, double.PositiveInfinity, player, opponent);
+                double score = Minimax(nextBoard, _depth - 1, false, double.NegativeInfinity, double.PositiveInfinity, player, opponent);
+                scores[col] = score;
+                OnColumnEvaluated?.Invoke(col, score);
+            }
+            else
+            {
+                scores[col] = double.NaN;
+                OnColumnEvaluated?.Invoke(col, double.NaN);
+            }
+        }
 
-                if (moveValue > bestValue)
+        return scores;
+    }
+
+    public int GetBestMove(Board board, Player player)
+    {
+        double[] scores = GetColumnScores(board, player);
+        int bestMove = -1;
+        double bestValue = double.NegativeInfinity;
+
+        for (int col = 0; col < Board.Columns; col++)
+        {
+            if (!double.IsNaN(scores[col]) && scores[col] > bestValue)
+            {
+                bestValue = scores[col];
+                bestMove = col;
+            }
+        }
+
+        // Fallback to first available valid move if all evaluate to NegativeInfinity
+        if (bestMove == -1)
+        {
+            for (int col = 0; col < Board.Columns; col++)
+            {
+                if (board.CanMakeMove(col))
                 {
-                    bestValue = moveValue;
                     bestMove = col;
+                    break;
                 }
             }
         }

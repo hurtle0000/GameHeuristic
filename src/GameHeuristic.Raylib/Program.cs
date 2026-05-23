@@ -58,8 +58,14 @@ class Program
         // Currently active falling piece animation
         FallingPiece? activeAnimation = null;
 
-        // Tracks the coordinates of the winning line to trigger flashing
-        List<Tuple<int, int>> winningLine = new List<Tuple<int, int>>();
+        // Tracks the coordinates of the winning line to trigger flashing (ValueTuples from Core)
+        List<(int Row, int Col)> winningLine = new List<(int Row, int Col)>();
+
+        // Tracks current AI move calculation scores for display
+        double[] currentAiScores = new double[Board.Columns];
+        for (int i = 0; i < Board.Columns; i++) currentAiScores[i] = double.NaN;
+        bool isAiThinking = false;
+        int pendingAiMove = -2; // -2 means no move, -1 means forfeit, 0-6 is the calculated move
 
         // 3. Set up 3D Perspective Camera (Pulled back for a wider view)
         Camera3D camera = new Camera3D
@@ -86,20 +92,20 @@ class Program
             if (Raylib.IsKeyPressed(KeyboardKey.One))
             {
                 p1Selection = (p1Selection + 1) % (heuristics.Count + 1);
-                ResetMatch(ref board, ref settledGrid, ref activeAnimation, ref currentPlayer, ref gameState, ref lastTurnTime, ref winningLine);
+                ResetMatch(ref board, ref settledGrid, ref activeAnimation, ref currentPlayer, ref gameState, ref lastTurnTime, ref winningLine, currentAiScores, ref isAiThinking, ref pendingAiMove);
             }
 
             // Cycle Player 2 (Yellow) using Key '2'
             if (Raylib.IsKeyPressed(KeyboardKey.Two))
             {
                 p2Selection = (p2Selection + 1) % (heuristics.Count + 1);
-                ResetMatch(ref board, ref settledGrid, ref activeAnimation, ref currentPlayer, ref gameState, ref lastTurnTime, ref winningLine);
+                ResetMatch(ref board, ref settledGrid, ref activeAnimation, ref currentPlayer, ref gameState, ref lastTurnTime, ref winningLine, currentAiScores, ref isAiThinking, ref pendingAiMove);
             }
 
             // Manual spacebar match reset
             if (Raylib.IsKeyPressed(KeyboardKey.Space))
             {
-                ResetMatch(ref board, ref settledGrid, ref activeAnimation, ref currentPlayer, ref gameState, ref lastTurnTime, ref winningLine);
+                ResetMatch(ref board, ref settledGrid, ref activeAnimation, ref currentPlayer, ref gameState, ref lastTurnTime, ref winningLine, currentAiScores, ref isAiThinking, ref pendingAiMove);
             }
 
             // ================= PHYSICS ANIMATION UPDATE LOOP =================
@@ -158,6 +164,8 @@ class Program
                             if (board.CanMakeMove(col))
                             {
                                 MakeMoveAndAnimate(col, board, currentPlayer, ref activeAnimation, ref gameState, ref currentPlayer, ref winningLine);
+                                // Clear scores on human turn
+                                for (int i = 0; i < Board.Columns; i++) currentAiScores[i] = double.NaN;
                             }
                         }
                     }
@@ -170,6 +178,8 @@ class Program
                             if (board.CanMakeMove(col))
                             {
                                 MakeMoveAndAnimate(col, board, currentPlayer, ref activeAnimation, ref gameState, ref currentPlayer, ref winningLine);
+                                // Clear scores on human turn
+                                for (int i = 0; i < Board.Columns; i++) currentAiScores[i] = double.NaN;
                             }
                         }
                     }
@@ -177,12 +187,10 @@ class Program
                 else
                 {
                     // ---------------- AI TURN CONTROLS ----------------
-                    if (currentTime - lastTurnTime >= turnDelay)
+                    if (pendingAiMove != -2)
                     {
-                        IHeuristic activeHeuristic = heuristics[currentSelection - 1];
-                        MinimaxAI ai = new MinimaxAI(activeHeuristic, depth: 6);
-                        
-                        int move = ai.GetBestMove(board, currentPlayer);
+                        int move = pendingAiMove;
+                        pendingAiMove = -2; // Reset
 
                         if (move == -1 || !board.CanMakeMove(move))
                         {
@@ -193,6 +201,38 @@ class Program
                         {
                             MakeMoveAndAnimate(move, board, currentPlayer, ref activeAnimation, ref gameState, ref currentPlayer, ref winningLine);
                         }
+                    }
+                    else if (!isAiThinking && currentTime - lastTurnTime >= turnDelay)
+                    {
+                        IHeuristic activeHeuristic = heuristics[currentSelection - 1];
+                        MinimaxAI ai = new MinimaxAI(activeHeuristic, depth: 6);
+                        
+                        // Clear scores before starting search
+                        for (int i = 0; i < Board.Columns; i++) currentAiScores[i] = double.NaN;
+                        
+                        isAiThinking = true;
+
+                        // Subscribe to live column score updates
+                        ai.OnColumnEvaluated = (col, score) =>
+                        {
+                            currentAiScores[col] = score;
+                        };
+
+                        Board startBoard = board;
+                        Player startPlayer = currentPlayer;
+
+                        // Run the AI search on a background task so Raylib loop stays perfectly smooth at 60 FPS
+                        System.Threading.Tasks.Task.Run(() =>
+                        {
+                            int move = ai.GetBestMove(startBoard, startPlayer);
+                            
+                            // Only apply if state hasn't changed or been reset
+                            if (board == startBoard && currentPlayer == startPlayer && gameState == GameState.Ongoing)
+                            {
+                                pendingAiMove = move;
+                            }
+                            isAiThinking = false;
+                        });
                     }
                 }
             }
@@ -243,7 +283,7 @@ class Program
                     if (piece != Player.None)
                     {
                         // Check if this token belongs to the winning sequence
-                        bool isWinningToken = winningLine.Any(t => t.Item1 == r && t.Item2 == c);
+                        bool isWinningToken = winningLine.Any(t => t.Row == r && t.Col == c);
                         // Flashes neon-white every 200ms
                         bool shouldFlash = isWinningToken && ((int)(Raylib.GetTime() * 5) % 2 == 0);
 
@@ -260,6 +300,59 @@ class Program
             }
 
             Raylib.EndMode3D();
+
+            // ================= 2D HOLOGRAPHIC FLOATING SCORES =================
+            // Project each column's 3D coordinate just above the top of the rack to 2D screen space
+            for (int c = 0; c < Board.Columns; c++)
+            {
+                double score = currentAiScores[c];
+                if (!double.IsNaN(score))
+                {
+                    float x = (c - 3.0f) * 1.0f;
+                    // Project 3D point above the column to 2D screen coordinates
+                    Vector3 worldPos = new Vector3(x, 3.2f, 0.0f);
+                    Vector2 screenPos = Raylib.GetWorldToScreen(worldPos, camera);
+
+                    if (screenPos.X > 0 && screenPos.X < screenWidth && screenPos.Y > 0 && screenPos.Y < screenHeight)
+                    {
+                        string scoreText = score.ToString("F1");
+                        Color textColor = Color.White;
+                        Color panelBg = new Color(20, 20, 30, 200); // Glassmorphism backing
+
+                        if (score > 900000)
+                        {
+                            scoreText = "WIN";
+                            textColor = Color.Green;
+                        }
+                        else if (score < -900000)
+                        {
+                            scoreText = "LOSS";
+                            textColor = Color.Red;
+                        }
+                        else if (score > 0)
+                        {
+                            textColor = Color.Green;
+                        }
+                        else if (score < 0)
+                        {
+                            textColor = Color.Red;
+                        }
+
+                        int fontSize = 14;
+                        int textWidth = Raylib.MeasureText(scoreText, fontSize);
+                        
+                        // Draw a sleek rounded rectangle backing box
+                        int rectWidth = textWidth + 14;
+                        int rectHeight = fontSize + 10;
+                        Rectangle rect = new Rectangle(screenPos.X - rectWidth / 2f, screenPos.Y - rectHeight / 2f, rectWidth, rectHeight);
+                        Raylib.DrawRectangleRounded(rect, 0.4f, 4, panelBg);
+                        Raylib.DrawRectangleRoundedLines(rect, 0.4f, 4, 1.0f, textColor);
+
+                        // Draw text centered inside the box
+                        Raylib.DrawText(scoreText, (int)(screenPos.X - textWidth / 2f), (int)(screenPos.Y - fontSize / 2f), fontSize, textColor);
+                    }
+                }
+            }
 
             // ================= 2D HUD / TEXT OVERLAYS =================
             Raylib.DrawText("3D CONNECT 4 ARCADIAN STAGE", 20, 20, 24, Color.White);
@@ -282,6 +375,11 @@ class Program
                 {
                     turnText = "GRAVITY DROP PHYSICS TICK...";
                     turnColor = Color.LightGray;
+                }
+                else if (isAiThinking)
+                {
+                    turnText = "AI MINIMAX CALCULATING WEIGHTS...";
+                    turnColor = Color.SkyBlue;
                 }
                 else
                 {
@@ -320,7 +418,7 @@ class Program
     /// <summary>
     /// Resets the game board and animation states
     /// </summary>
-    static void ResetMatch(ref Board board, ref Player[,] settledGrid, ref FallingPiece? activeAnimation, ref Player currentPlayer, ref GameState gameState, ref double lastTurnTime, ref List<Tuple<int, int>> winningLine)
+    static void ResetMatch(ref Board board, ref Player[,] settledGrid, ref FallingPiece? activeAnimation, ref Player currentPlayer, ref GameState gameState, ref double lastTurnTime, ref List<(int Row, int Col)> winningLine, double[] currentAiScores, ref bool isAiThinking, ref int pendingAiMove)
     {
         board = new Board();
         settledGrid = new Player[Board.Rows, Board.Columns];
@@ -329,23 +427,17 @@ class Program
         gameState = GameState.Ongoing;
         lastTurnTime = Raylib.GetTime();
         winningLine.Clear();
+        for (int i = 0; i < Board.Columns; i++) currentAiScores[i] = double.NaN;
+        isAiThinking = false;
+        pendingAiMove = -2;
     }
 
     /// <summary>
     /// Commits a column choice, calculates landing row coordinates, and launches the fall animation.
     /// </summary>
-    static void MakeMoveAndAnimate(int col, Board board, Player player, ref FallingPiece? activeAnimation, ref GameState gameState, ref Player nextPlayer, ref List<Tuple<int, int>> winningLine)
+    static void MakeMoveAndAnimate(int col, Board board, Player player, ref FallingPiece? activeAnimation, ref GameState gameState, ref Player nextPlayer, ref List<(int Row, int Col)> winningLine)
     {
-        int landingRow = -1;
-        for (int r = Board.Rows - 1; r >= 0; r--)
-        {
-            if (board.GetPiece(r, col) == Player.None)
-            {
-                landingRow = r;
-                break;
-            }
-        }
-
+        int landingRow = board.GetLandingRow(col);
         board.MakeMove(col, player);
 
         activeAnimation = new FallingPiece
@@ -361,88 +453,10 @@ class Program
         gameState = board.CheckGameState();
         if (gameState != GameState.Ongoing && (gameState == GameState.RedWin || gameState == GameState.YellowWin))
         {
-            winningLine = GetWinningLine(board);
+            winningLine = board.GetWinningLine();
         }
 
         nextPlayer = player == Player.Red ? Player.Yellow : Player.Red;
-    }
-
-    /// <summary>
-    /// Traverses the logical board state to return the exact four cell coordinates that formed the winning line.
-    /// </summary>
-    static List<Tuple<int, int>> GetWinningLine(Board board)
-    {
-        var line = new List<Tuple<int, int>>();
-
-        // Check horizontal
-        for (int r = 0; r < Board.Rows; r++)
-        {
-            for (int c = 0; c <= Board.Columns - 4; c++)
-            {
-                Player p = board.GetPiece(r, c);
-                if (p != Player.None && p == board.GetPiece(r, c + 1) && p == board.GetPiece(r, c + 2) && p == board.GetPiece(r, c + 3))
-                {
-                    line.Add(Tuple.Create(r, c));
-                    line.Add(Tuple.Create(r, c + 1));
-                    line.Add(Tuple.Create(r, c + 2));
-                    line.Add(Tuple.Create(r, c + 3));
-                    return line;
-                }
-            }
-        }
-
-        // Check vertical
-        for (int r = 0; r <= Board.Rows - 4; r++)
-        {
-            for (int c = 0; c < Board.Columns; c++)
-            {
-                Player p = board.GetPiece(r, c);
-                if (p != Player.None && p == board.GetPiece(r + 1, c) && p == board.GetPiece(r + 2, c) && p == board.GetPiece(r + 3, c))
-                {
-                    line.Add(Tuple.Create(r, c));
-                    line.Add(Tuple.Create(r + 1, c));
-                    line.Add(Tuple.Create(r + 2, c));
-                    line.Add(Tuple.Create(r + 3, c));
-                    return line;
-                }
-            }
-        }
-
-        // Check diagonal (down-right)
-        for (int r = 0; r <= Board.Rows - 4; r++)
-        {
-            for (int c = 0; c <= Board.Columns - 4; c++)
-            {
-                Player p = board.GetPiece(r, c);
-                if (p != Player.None && p == board.GetPiece(r + 1, c + 1) && p == board.GetPiece(r + 2, c + 2) && p == board.GetPiece(r + 3, c + 3))
-                {
-                    line.Add(Tuple.Create(r, c));
-                    line.Add(Tuple.Create(r + 1, c + 1));
-                    line.Add(Tuple.Create(r + 2, c + 2));
-                    line.Add(Tuple.Create(r + 3, c + 3));
-                    return line;
-                }
-            }
-        }
-
-        // Check diagonal (up-right)
-        for (int r = 3; r < Board.Rows; r++)
-        {
-            for (int c = 0; c <= Board.Columns - 4; c++)
-            {
-                Player p = board.GetPiece(r, c);
-                if (p != Player.None && p == board.GetPiece(r - 1, c + 1) && p == board.GetPiece(r - 2, c + 2) && p == board.GetPiece(r - 3, c + 3))
-                {
-                    line.Add(Tuple.Create(r, c));
-                    line.Add(Tuple.Create(r - 1, c + 1));
-                    line.Add(Tuple.Create(r - 2, c + 2));
-                    line.Add(Tuple.Create(r - 3, c + 3));
-                    return line;
-                }
-            }
-        }
-
-        return line;
     }
 
     /// <summary>
