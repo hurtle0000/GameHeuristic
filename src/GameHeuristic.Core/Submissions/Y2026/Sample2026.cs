@@ -11,13 +11,35 @@ public class StudentHeuristic2026 : IHeuristic
 {
     public string Name => "Student 2026 - Greedy Builder";
 
+    /// <summary>
+    /// This evaluation scores moves solely on building out rows of 2, 3 or 4.  It doesn't look at the opponent.
+    ///
+    /// Look at each cell on the board that start a winning position and calculate a score for each horizontal,
+    /// vertical and diagonal line that could start there.  If there is an opponent piece in the line, it
+    /// can't be a winning position, so score that zero
+    /// </summary>
+    /// <param name="board"></param>
+    /// <param name="player"></param>
+    /// <returns></returns>
     public double Evaluate(Player[,] board, Player player)
     {
         double score = 0;
 
         // Evaluate all possible 4-slot windows (horizontal, vertical, diagonal)
         
-        // Horizontal
+        // Horizontal - for each row on the board, look at the lines of 4 to the right and calculate a score
+        // 
+        // Only the windows marked X will be included in the loop
+        //
+        //   0 1 2 3 4 5 6
+        //  +-------------
+        // 0|X X X X - - -  
+        // 1|X X X X - - - 
+        // 2|X X X X - - -
+        // 3|X X X X - - -
+        // 4|X X X X - - -
+        // 5|X X X X - - -
+        //
         for (int r = 0; r < Board.Rows; r++)
         {
             for (int c = 0; c <= Board.Columns - 4; c++)
@@ -28,7 +50,19 @@ public class StudentHeuristic2026 : IHeuristic
             }
         }
 
-        // Vertical
+        // Vertical - for each column on the board, look at the lines of 4 below and calculate a score
+        // 
+        // Only the windows marked X will be included in the loop
+        //
+        //   0 1 2 3 4 5 6
+        //  +-------------
+        // 0|X X X X X X X  
+        // 1|X X X X X X X 
+        // 2|X X X X X X X
+        // 3|- - - - - - -
+        // 4|- - - - - - -
+        // 5|- - - - - - -
+        //
         for (int c = 0; c < Board.Columns; c++)
         {
             for (int r = 0; r <= Board.Rows - 4; r++)
@@ -39,7 +73,19 @@ public class StudentHeuristic2026 : IHeuristic
             }
         }
 
-        // Diagonal (Down-Right)
+        // Diagonal (Down-Right)- for each column on the board, look at the lines of 4 down-right and calculate a score
+        // 
+        // Only the windows marked X will be included in the loop
+        //
+        //   0 1 2 3 4 5 6
+        //  +-------------
+        // 0|X X X X - - -  
+        // 1|X X X X - - - 
+        // 2|X X X X - - -
+        // 3|- - - - - - -
+        // 4|- - - - - - -
+        // 5|- - - - - - -
+        //
         for (int r = 0; r <= Board.Rows - 4; r++)
         {
             for (int c = 0; c <= Board.Columns - 4; c++)
@@ -50,7 +96,19 @@ public class StudentHeuristic2026 : IHeuristic
             }
         }
 
-        // Diagonal (Up-Right)
+        // Diagonal (Up-Right)- for each column on the board, look at the lines of 4 up-right and calculate a score
+        // 
+        // Only the windows marked X will be included in the loop
+        //
+        //   0 1 2 3 4 5 6
+        //  +-------------
+        // 0|- - - - - - -  
+        // 1|- - - - - - - 
+        // 2|- - - - - - -
+        // 3|X X X X - - -
+        // 4|X X X X - - -
+        // 5|X X X X - - -
+        //
         for (int r = 3; r < Board.Rows; r++)
         {
             for (int c = 0; c <= Board.Columns - 4; c++)
@@ -64,6 +122,25 @@ public class StudentHeuristic2026 : IHeuristic
         return score;
     }
 
+    /// <summary>
+    /// This is the calculation, which relies on having a set of 4 co-ordinates for a possible winning
+    /// line sent as parameters.
+    ///
+    /// Lines with two tokens score 10
+    /// Lines with three tokens score 100
+    /// Lines with four tokens score 10000 (maximum value)
+    ///
+    /// It doesn't matter where the spaces are in the lines of two or three
+    ///
+    /// If there is an opponent token anywhere in the line, it's not a possible winner so is set to 0
+    /// regardless of the number of player tokens
+    /// </summary>
+    /// <param name="p1"></param>
+    /// <param name="p2"></param>
+    /// <param name="p3"></param>
+    /// <param name="p4"></param>
+    /// <param name="player"></param>
+    /// <returns></returns>
     private double EvaluateWindow(Player p1, Player p2, Player p3, Player p4, Player player)
     {
         int playerCount = 0;
