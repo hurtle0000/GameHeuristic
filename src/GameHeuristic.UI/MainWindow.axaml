@@ -88,24 +88,34 @@
                     <TextBlock Name="TournamentStatus" Text="Ready" HorizontalAlignment="Center" />
                 </StackPanel>
 
-                <!-- Tournament Results -->
-                <Grid Grid.Column="1" RowDefinitions="Auto, Auto, *">
-                    <TextBlock Grid.Row="0" Text="Leaderboard" FontSize="20" FontWeight="Bold" Margin="10" />
+                <!-- Tournament Results & Bracket -->
+                <TabControl Grid.Column="1" Margin="10">
+                    <TabItem Header="Leaderboard">
+                        <Grid RowDefinitions="Auto, Auto, *">
+                            <TextBlock Grid.Row="0" Text="Leaderboard" FontSize="20" FontWeight="Bold" Margin="10" />
+                            
+                            <!-- Header -->
+                            <Grid Grid.Row="1" ColumnDefinitions="60, *, 80, 80, 80, 100" Margin="10,0" Background="#eeeeee">
+                                <TextBlock Grid.Column="0" Text="Rank" FontWeight="Bold" Margin="5"/>
+                                <TextBlock Grid.Column="1" Text="Name" FontWeight="Bold" Margin="5"/>
+                                <TextBlock Grid.Column="2" Text="Wins" FontWeight="Bold" Margin="5"/>
+                                <TextBlock Grid.Column="3" Text="Losses" FontWeight="Bold" Margin="5"/>
+                                <TextBlock Grid.Column="4" Text="Draws" FontWeight="Bold" Margin="5"/>
+                                <TextBlock Grid.Column="5" Text="Score" FontWeight="Bold" Margin="5"/>
+                            </Grid>
+        
+                            <ScrollViewer Grid.Row="2" Margin="10,0">
+                                <StackPanel Name="LeaderboardList" Spacing="5" />
+                            </ScrollViewer>
+                        </Grid>
+                    </TabItem>
                     
-                    <!-- Header -->
-                    <Grid Grid.Row="1" ColumnDefinitions="60, *, 80, 80, 80, 100" Margin="10,0" Background="#eeeeee">
-                        <TextBlock Grid.Column="0" Text="Rank" FontWeight="Bold" Margin="5"/>
-                        <TextBlock Grid.Column="1" Text="Name" FontWeight="Bold" Margin="5"/>
-                        <TextBlock Grid.Column="2" Text="Wins" FontWeight="Bold" Margin="5"/>
-                        <TextBlock Grid.Column="3" Text="Losses" FontWeight="Bold" Margin="5"/>
-                        <TextBlock Grid.Column="4" Text="Draws" FontWeight="Bold" Margin="5"/>
-                        <TextBlock Grid.Column="5" Text="Score" FontWeight="Bold" Margin="5"/>
-                    </Grid>
-
-                    <ScrollViewer Grid.Row="2" Margin="10,0">
-                        <StackPanel Name="LeaderboardList" Spacing="5" />
-                    </ScrollViewer>
-                </Grid>
+                    <TabItem Header="Knockout Bracket" Name="BracketTab">
+                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                            <Canvas Name="BracketCanvas" Background="#1e1e2e" Width="1000" Height="600"/>
+                        </ScrollViewer>
+                    </TabItem>
+                </TabControl>
             </Grid>
         </TabItem>
     </TabControl>

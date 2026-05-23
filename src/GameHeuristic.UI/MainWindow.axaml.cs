@@ -366,6 +366,9 @@ public partial class MainWindow : Window
             return;
         }
 
+        // Clear bracket canvas at start
+        BracketCanvas.Children.Clear();
+
         _tournamentCts = new CancellationTokenSource();
         RunTournamentButton.IsEnabled = false;
         StopTournamentButton.IsEnabled = true;
@@ -433,10 +436,14 @@ public partial class MainWindow : Window
             else // Knockout
             {
                 List<IHeuristic> currentRound = new List<IHeuristic>(participants);
+                int roundIndex = 0;
+                List<KnockoutMatch> matchesList = new List<KnockoutMatch>();
+
                 while (currentRound.Count > 1)
                 {
                     ct.ThrowIfCancellationRequested();
                     List<IHeuristic> winners = new List<IHeuristic>();
+                    int matchIndex = 0;
                     
                     for (int i = 0; i < currentRound.Count - 1; i += 2)
                     {
@@ -447,17 +454,220 @@ public partial class MainWindow : Window
                         Player winner = PlayHeadlessGame(h1, h2, depth);
                         UpdateStats(stats, h1.Name, h2.Name, winner);
                         
+                        string winnerName = winner == Player.Yellow ? h2.Name : h1.Name;
                         if (winner == Player.Yellow) winners.Add(h2);
                         else winners.Add(h1);
 
+                        matchesList.Add(new KnockoutMatch
+                        {
+                            Player1 = h1.Name,
+                            Player2 = h2.Name,
+                            Winner = winnerName,
+                            RoundIndex = roundIndex,
+                            MatchIndex = matchIndex
+                        });
+
+                        matchIndex++;
                         matchesPlayed++;
                         UpdateProgress(matchesPlayed, totalMatches);
                     }
-                    if (currentRound.Count % 2 != 0) winners.Add(currentRound.Last());
+                    if (currentRound.Count % 2 != 0)
+                    {
+                        var byePlayer = currentRound.Last();
+                        winners.Add(byePlayer);
+                        
+                        matchesList.Add(new KnockoutMatch
+                        {
+                            Player1 = byePlayer.Name,
+                            Player2 = "(BYE)",
+                            Winner = byePlayer.Name,
+                            RoundIndex = roundIndex,
+                            MatchIndex = matchIndex
+                        });
+                        matchIndex++;
+                    }
                     currentRound = winners;
+                    roundIndex++;
                 }
+
+                // Render knockout bracket in the UI thread
+                Dispatcher.UIThread.Post(() => RenderKnockoutBracket(matchesList));
             }
         }
+    }
+
+    private void RenderKnockoutBracket(List<KnockoutMatch> matches)
+    {
+        BracketCanvas.Children.Clear();
+        if (matches.Count == 0) return;
+
+        int maxRound = matches.Max(m => m.RoundIndex);
+        
+        // Calculate and set canvas size dynamically to allow scrolling
+        double canvasWidth = (maxRound + 1) * 260 + 100;
+        double canvasHeight = (1 << maxRound) * 120 + 100;
+        BracketCanvas.Width = Math.Max(1000, canvasWidth);
+        BracketCanvas.Height = Math.Max(600, canvasHeight);
+
+        // Standard measurements
+        double nodeWidth = 180;
+        double nodeHeight = 55;
+
+        // Draw connections first so they render under the nodes
+        foreach (var match in matches)
+        {
+            if (match.RoundIndex < maxRound)
+            {
+                // Find coordinates of this node's right center
+                double sCurrent = 70 * Math.Pow(2, match.RoundIndex);
+                double yCurrent = match.MatchIndex * sCurrent + (sCurrent / 2);
+                double xCurrentRight = match.RoundIndex * 260 + 40 + nodeWidth;
+
+                // Find coordinates of the child node's left center
+                int nextRound = match.RoundIndex + 1;
+                int nextMatchIndex = match.MatchIndex / 2;
+                double sNext = 70 * Math.Pow(2, nextRound);
+                double yNext = nextMatchIndex * sNext + (sNext / 2);
+                double xNextLeft = nextRound * 260 + 40;
+
+                // Draw neat orthogonal connection line (Right -> MidpointX -> MidpointX -> YNext -> XNext)
+                double midX = xCurrentRight + (xNextLeft - xCurrentRight) / 2;
+
+                var line1 = new Line
+                {
+                    StartPoint = new Point(xCurrentRight, yCurrent),
+                    EndPoint = new Point(midX, yCurrent),
+                    Stroke = Brushes.SlateGray,
+                    StrokeThickness = 2
+                };
+                var line2 = new Line
+                {
+                    StartPoint = new Point(midX, yCurrent),
+                    EndPoint = new Point(midX, yNext),
+                    Stroke = Brushes.SlateGray,
+                    StrokeThickness = 2
+                };
+                var line3 = new Line
+                {
+                    StartPoint = new Point(midX, yNext),
+                    EndPoint = new Point(xNextLeft, yNext),
+                    Stroke = Brushes.SlateGray,
+                    StrokeThickness = 2
+                };
+
+                BracketCanvas.Children.Add(line1);
+                BracketCanvas.Children.Add(line2);
+                BracketCanvas.Children.Add(line3);
+            }
+        }
+
+        // Draw nodes
+        foreach (var match in matches)
+        {
+            double s = 70 * Math.Pow(2, match.RoundIndex);
+            double y = match.MatchIndex * s + (s / 2);
+            double x = match.RoundIndex * 260 + 40;
+
+            double top = y - (nodeHeight / 2);
+
+            // Create a border panel representing the match box
+            var matchBorder = new Border
+            {
+                Width = nodeWidth,
+                Height = nodeHeight,
+                Background = new SolidColorBrush(Color.Parse("#2e3047")),
+                BorderBrush = new SolidColorBrush(Color.Parse("#414561")),
+                BorderThickness = new Thickness(1.5),
+                CornerRadius = new CornerRadius(6),
+                Padding = new Thickness(6, 4)
+            };
+
+            // Setup a grid layout inside the node box
+            var grid = new Grid
+            {
+                RowDefinitions = new RowDefinitions("*, *"),
+                ColumnDefinitions = new ColumnDefinitions("*, Auto")
+            };
+
+            // Player 1 details
+            var p1Text = new TextBlock
+            {
+                Text = ShortenName(match.Player1),
+                FontSize = 11,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+            };
+            var p1Status = new TextBlock
+            {
+                Text = match.Winner == match.Player1 && match.Player1 != "(BYE)" ? "🏆" : "",
+                FontSize = 10,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+            };
+            if (match.Winner == match.Player1)
+            {
+                p1Text.Foreground = Brushes.LightGreen;
+                p1Text.FontWeight = FontWeight.Bold;
+            }
+            else
+            {
+                p1Text.Foreground = match.Player2 == "(BYE)" ? Brushes.LightGreen : Brushes.Gray;
+            }
+
+            Grid.SetRow(p1Text, 0);
+            Grid.SetColumn(p1Text, 0);
+            Grid.SetRow(p1Status, 0);
+            Grid.SetColumn(p1Status, 1);
+            grid.Children.Add(p1Text);
+            grid.Children.Add(p1Status);
+
+            // Player 2 details
+            var p2Text = new TextBlock
+            {
+                Text = ShortenName(match.Player2),
+                FontSize = 11,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+            };
+            var p2Status = new TextBlock
+            {
+                Text = match.Winner == match.Player2 && match.Player2 != "(BYE)" ? "🏆" : "",
+                FontSize = 10,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+            };
+            if (match.Winner == match.Player2)
+            {
+                p2Text.Foreground = Brushes.LightGreen;
+                p2Text.FontWeight = FontWeight.Bold;
+            }
+            else
+            {
+                p2Text.Foreground = Brushes.Gray;
+            }
+
+            Grid.SetRow(p2Text, 1);
+            Grid.SetColumn(p2Text, 0);
+            Grid.SetRow(p2Status, 1);
+            Grid.SetColumn(p2Status, 1);
+            grid.Children.Add(p2Text);
+            grid.Children.Add(p2Status);
+
+            matchBorder.Child = grid;
+
+            // Position on canvas
+            Canvas.SetLeft(matchBorder, x);
+            Canvas.SetTop(matchBorder, top);
+
+            BracketCanvas.Children.Add(matchBorder);
+        }
+    }
+
+    private string ShortenName(string fullName)
+    {
+        if (fullName == "(BYE)") return fullName;
+        int hyphenIndex = fullName.IndexOf('-');
+        if (hyphenIndex >= 0 && hyphenIndex < fullName.Length - 1)
+        {
+            return fullName.Substring(hyphenIndex + 1).Trim();
+        }
+        return fullName.Length > 16 ? fullName.Substring(0, 14) + ".." : fullName;
     }
 
     private int CalculateKnockoutMatches(int participantCount, int iterations)
