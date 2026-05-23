@@ -36,6 +36,9 @@
                 <StackPanel Grid.Column="1" Margin="10" Spacing="10">
                     <TextBlock Text="Settings" FontSize="20" FontWeight="Bold" Margin="0,0,0,10" />
                     
+                    <TextBlock Text="Heuristic Group:" />
+                    <ComboBox Name="GroupFilterCombo" HorizontalAlignment="Stretch" SelectionChanged="OnGroupFilterChanged" />
+                    
                     <TextBlock Text="Player 1 (Red):" />
                     <ComboBox Name="Player1Combo" HorizontalAlignment="Stretch" />
                     
@@ -62,6 +65,9 @@
                 <!-- Tournament Settings -->
                 <StackPanel Grid.Column="0" Margin="10" Spacing="10">
                     <TextBlock Text="Tournament Settings" FontSize="20" FontWeight="Bold" Margin="0,0,0,10" />
+                    
+                    <TextBlock Text="Heuristic Group:" />
+                    <ComboBox Name="TournamentGroupFilterCombo" HorizontalAlignment="Stretch" SelectionChanged="OnTournamentGroupFilterChanged" />
                     
                     <TextBlock Text="Mode:" />
                     <ComboBox Name="TournamentModeCombo" HorizontalAlignment="Stretch">

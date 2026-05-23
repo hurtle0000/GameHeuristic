@@ -10,15 +10,30 @@ class Program
     static void Main(string[] args)
     {
         Console.WriteLine("=== Connect 4 Heuristic Tournament ===");
-        List<IHeuristic> heuristics = HeuristicLoader.LoadHeuristics();
+        
+        string group = "All";
+        for (int i = 0; i < args.Length; i++)
+        {
+            if ((args[i] == "--group" || args[i] == "-g") && i + 1 < args.Length)
+            {
+                group = args[i + 1];
+                i++;
+            }
+        }
+
+        List<string> availableGroups = HeuristicLoader.GetAvailableGroups();
+        Console.WriteLine($"Available Groups: All, {string.Join(", ", availableGroups)}");
+        Console.WriteLine($"Running tournament for group: {group}");
+
+        List<IHeuristic> heuristics = HeuristicLoader.LoadHeuristics(group);
 
         if (heuristics.Count < 2)
         {
-            Console.WriteLine("Need at least 2 heuristics to run a tournament.");
+            Console.WriteLine($"Need at least 2 heuristics in group '{group}' to run a tournament.");
             return;
         }
 
-        Console.WriteLine($"Found {heuristics.Count} heuristics.");
+        Console.WriteLine($"Found {heuristics.Count} heuristics for group '{group}'.");
         Dictionary<string, Stats> stats = heuristics.ToDictionary(h => h.Name, h => new Stats());
 
         // Round Robin: Each plays every other twice (once as Red, once as Yellow)

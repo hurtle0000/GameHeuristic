@@ -1,7 +1,7 @@
 using System;
 using GameHeuristic.Core;
 
-namespace GameHeuristic.Core.Submissions;
+namespace GameHeuristic.Core.Submissions.Baselines;
 
 public class RogerRandom : IHeuristic
 {
@@ -10,7 +10,6 @@ public class RogerRandom : IHeuristic
 
     public double Evaluate(Player[,] board, Player player)
     {
-        // Just return a random value. Minimax will pick the column that happens to get the highest random number.
         return _random.NextDouble();
     }
 }
@@ -30,7 +29,6 @@ public class LawrenceLow : IHeuristic
             {
                 if (board[r, c] == player)
                 {
-                    // Favor lower column indices by giving them higher weight
                     score += (Board.Columns - c);
                 }
                 else if (board[r, c] == opponent)
@@ -53,14 +51,10 @@ public class DianaDiagonal : IHeuristic
         double score = 0;
         Player opponent = player == Player.Red ? Player.Yellow : Player.Red;
 
-        // Weights for different directions
         const double DiagonalWeight = 3.0;
         const double HorizontalWeight = 2.0;
         const double VerticalWeight = 1.0;
 
-        // We'll look at every possible 4-slot window and score it
-        
-        // Horizontal
         for (int r = 0; r < Board.Rows; r++)
         {
             for (int c = 0; c <= Board.Columns - 4; c++)
@@ -71,7 +65,6 @@ public class DianaDiagonal : IHeuristic
             }
         }
 
-        // Vertical
         for (int c = 0; c < Board.Columns; c++)
         {
             for (int r = 0; r <= Board.Rows - 4; r++)
@@ -82,7 +75,6 @@ public class DianaDiagonal : IHeuristic
             }
         }
 
-        // Diagonal (Down-Right)
         for (int r = 0; r <= Board.Rows - 4; r++)
         {
             for (int c = 0; c <= Board.Columns - 4; c++)
@@ -93,7 +85,6 @@ public class DianaDiagonal : IHeuristic
             }
         }
 
-        // Diagonal (Up-Right)
         for (int r = 3; r < Board.Rows; r++)
         {
             for (int c = 0; c <= Board.Columns - 4; c++)
@@ -125,7 +116,7 @@ public class DianaDiagonal : IHeuristic
         if (playerCount == 3 && emptyCount == 1) return 100;
         if (playerCount == 2 && emptyCount == 2) return 10;
         
-        if (opponentCount == 3 && emptyCount == 1) return -80; // Block opponent
+        if (opponentCount == 3 && emptyCount == 1) return -80;
         
         return 0;
     }

@@ -17,7 +17,8 @@ public partial class MainWindow : Window
     private Board _board = new Board();
     private ObservableCollection<CellViewModel> _cells = new ObservableCollection<CellViewModel>();
     private CancellationTokenSource? _gameCts;
-    private List<IHeuristic> _heuristics = new List<IHeuristic>();
+    private List<IHeuristic> _singleMatchHeuristics = new List<IHeuristic>();
+    private List<IHeuristic> _tournamentHeuristics = new List<IHeuristic>();
     
     // Tournament fields
     private ObservableCollection<ParticipantViewModel> _participants = new ObservableCollection<ParticipantViewModel>();
@@ -28,6 +29,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         InitializeBoard();
+        LoadGroups();
         LoadHeuristics();
     }
 
@@ -44,28 +46,65 @@ public partial class MainWindow : Window
         BoardDisplay.ItemsSource = _cells;
     }
 
+    private void LoadGroups()
+    {
+        List<string> groups = new List<string> { "All" };
+        groups.AddRange(HeuristicLoader.GetAvailableGroups());
+
+        GroupFilterCombo.ItemsSource = groups;
+        GroupFilterCombo.SelectedIndex = 0;
+
+        TournamentGroupFilterCombo.ItemsSource = groups;
+        TournamentGroupFilterCombo.SelectedIndex = 0;
+    }
+
     private void LoadHeuristics()
     {
-        _heuristics = HeuristicLoader.LoadHeuristics();
-        
-        // Single Match setup
-        Player1Combo.ItemsSource = _heuristics.Select(h => h.Name).ToList();
-        Player2Combo.ItemsSource = _heuristics.Select(h => h.Name).ToList();
+        LoadHeuristicsForSingleMatch("All");
+        LoadHeuristicsForTournament("All");
+    }
 
-        if (_heuristics.Count > 0)
+    private void LoadHeuristicsForSingleMatch(string group)
+    {
+        _singleMatchHeuristics = HeuristicLoader.LoadHeuristics(group);
+        
+        Player1Combo.ItemsSource = _singleMatchHeuristics.Select(h => h.Name).ToList();
+        Player2Combo.ItemsSource = _singleMatchHeuristics.Select(h => h.Name).ToList();
+
+        if (_singleMatchHeuristics.Count > 0)
         {
             Player1Combo.SelectedIndex = 0;
-            Player2Combo.SelectedIndex = Math.Min(1, _heuristics.Count - 1);
+            Player2Combo.SelectedIndex = Math.Min(1, _singleMatchHeuristics.Count - 1);
         }
+    }
 
-        // Tournament setup
+    private void LoadHeuristicsForTournament(string group)
+    {
+        _tournamentHeuristics = HeuristicLoader.LoadHeuristics(group);
+        
         _participants.Clear();
-        foreach (IHeuristic h in _heuristics)
+        foreach (IHeuristic h in _tournamentHeuristics)
         {
-            _participants.Add(new ParticipantViewModel { Name = h.Name, Heuristic = h });
+            _participants.Add(new ParticipantViewModel { Name = h.Name, Heuristic = h, IsSelected = true });
         }
         ParticipantList.ItemsSource = _participants;
         LeaderboardList.ItemsSource = _results;
+    }
+
+    private void OnGroupFilterChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (GroupFilterCombo != null && GroupFilterCombo.SelectedItem is string selectedGroup)
+        {
+            LoadHeuristicsForSingleMatch(selectedGroup);
+        }
+    }
+
+    private void OnTournamentGroupFilterChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (TournamentGroupFilterCombo != null && TournamentGroupFilterCombo.SelectedItem is string selectedGroup)
+        {
+            LoadHeuristicsForTournament(selectedGroup);
+        }
     }
 
     #region Single Match Logic
@@ -77,8 +116,8 @@ public partial class MainWindow : Window
         _gameCts = new CancellationTokenSource();
         StartButton.IsEnabled = false;
         
-        IHeuristic h1 = _heuristics[Player1Combo.SelectedIndex];
-        IHeuristic h2 = _heuristics[Player2Combo.SelectedIndex];
+        IHeuristic h1 = _singleMatchHeuristics[Player1Combo.SelectedIndex];
+        IHeuristic h2 = _singleMatchHeuristics[Player2Combo.SelectedIndex];
 
         try
         {

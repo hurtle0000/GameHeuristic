@@ -1,6 +1,6 @@
 using System;
 
-namespace GameHeuristic.Core.Submissions;
+namespace GameHeuristic.Core.Submissions.Baselines;
 
 public class RandomHeuristic : IHeuristic
 {
