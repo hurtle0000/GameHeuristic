@@ -2,7 +2,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:GameHeuristic.UI"
         mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="800"
         x:Class="GameHeuristic.UI.MainWindow"
         Title="Connect 4 Heuristic Framework"
@@ -12,24 +11,9 @@
         <!-- Single Match Tab -->
         <TabItem Header="Single Match">
             <Grid ColumnDefinitions="*, 250">
-                <!-- Game Board -->
+                <!-- Game Board Grid -->
                 <Border Grid.Column="0" Background="#2b579a" Margin="20" CornerRadius="10">
-                    <ItemsControl Name="BoardDisplay">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <UniformGrid Rows="6" Columns="7" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="local:CellViewModel">
-                                <Ellipse Width="60" Height="60" Margin="5" Stroke="Black" StrokeThickness="1">
-                                    <Ellipse.Fill>
-                                        <Binding Path="Color" />
-                                    </Ellipse.Fill>
-                                </Ellipse>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <UniformGrid Name="BoardGrid" Rows="6" Columns="7" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10" />
                 </Border>
 
                 <!-- Controls -->
@@ -83,13 +67,7 @@
 
                     <TextBlock Text="Participants:" FontWeight="Bold" />
                     <ScrollViewer Height="300">
-                        <ItemsControl Name="ParticipantList">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="local:ParticipantViewModel">
-                                    <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected}" />
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                        <StackPanel Name="ParticipantList" Spacing="5" Margin="5" />
                     </ScrollViewer>
 
                     <Button Name="RunTournamentButton" Content="Run Tournament" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Click="OnRunTournamentClick" />
@@ -114,20 +92,7 @@
                     </Grid>
 
                     <ScrollViewer Grid.Row="2" Margin="10,0">
-                        <ItemsControl Name="LeaderboardList">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="local:TournamentResultViewModel">
-                                    <Grid ColumnDefinitions="60, *, 80, 80, 80, 100">
-                                        <TextBlock Grid.Column="0" Text="{Binding Rank}" Margin="5"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="5"/>
-                                        <TextBlock Grid.Column="2" Text="{Binding Wins}" Margin="5"/>
-                                        <TextBlock Grid.Column="3" Text="{Binding Losses}" Margin="5"/>
-                                        <TextBlock Grid.Column="4" Text="{Binding Draws}" Margin="5"/>
-                                        <TextBlock Grid.Column="5" Text="{Binding Score}" Margin="5"/>
-                                    </Grid>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                        <StackPanel Name="LeaderboardList" Spacing="5" />
                     </ScrollViewer>
                 </Grid>
             </Grid>

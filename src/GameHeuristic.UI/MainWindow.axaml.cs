@@ -1,29 +1,35 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.Controls.Shapes;
 using GameHeuristic.Core;
 
 namespace GameHeuristic.UI;
 
 public partial class MainWindow : Window
 {
+    // Core Game Fields
     private Board _board = new Board();
-    private ObservableCollection<CellViewModel> _cells = new ObservableCollection<CellViewModel>();
-    private CancellationTokenSource? _gameCts;
+    private readonly Ellipse[,] _uiCells = new Ellipse[Board.Rows, Board.Columns];
     private List<IHeuristic> _singleMatchHeuristics = new List<IHeuristic>();
     private List<IHeuristic> _tournamentHeuristics = new List<IHeuristic>();
-    
-    // Tournament fields
-    private ObservableCollection<ParticipantViewModel> _participants = new ObservableCollection<ParticipantViewModel>();
-    private ObservableCollection<TournamentResultViewModel> _results = new ObservableCollection<TournamentResultViewModel>();
+
+    // Single Match Timer Loop
+    private DispatcherTimer? _gameTimer;
+    private MinimaxAI? _ai1;
+    private MinimaxAI? _ai2;
+    private Player _currentPlayer;
+
+    // Tournament Fields
     private CancellationTokenSource? _tournamentCts;
+    private List<TournamentResult> _results = new List<TournamentResult>();
 
     public MainWindow()
     {
@@ -33,19 +39,35 @@ public partial class MainWindow : Window
         LoadHeuristics();
     }
 
+    /// <summary>
+    /// Procedurally builds the Connect 4 grid of Ellipse elements in the UI
+    /// and stores references in a 2D array for simple, direct manipulation.
+    /// </summary>
     private void InitializeBoard()
     {
-        _cells.Clear();
+        BoardGrid.Children.Clear();
         for (int r = 0; r < Board.Rows; r++)
         {
             for (int c = 0; c < Board.Columns; c++)
             {
-                _cells.Add(new CellViewModel());
+                var ellipse = new Ellipse
+                {
+                    Width = 60,
+                    Height = 60,
+                    Margin = new Thickness(5),
+                    Stroke = Brushes.Black,
+                    StrokeThickness = 1,
+                    Fill = Brushes.White
+                };
+                BoardGrid.Children.Add(ellipse);
+                _uiCells[r, c] = ellipse;
             }
         }
-        BoardDisplay.ItemsSource = _cells;
     }
 
+    /// <summary>
+    /// Loads Heuristic Group namespaces dynamically (Baselines, Teacher, etc.)
+    /// </summary>
     private void LoadGroups()
     {
         List<string> groups = new List<string> { "All" };
@@ -78,17 +100,25 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>
+    /// Dynamically populates the participants StackPanel with CheckBoxes
+    /// </summary>
     private void LoadHeuristicsForTournament(string group)
     {
         _tournamentHeuristics = HeuristicLoader.LoadHeuristics(group);
-        
-        _participants.Clear();
+        ParticipantList.Children.Clear();
+
         foreach (IHeuristic h in _tournamentHeuristics)
         {
-            _participants.Add(new ParticipantViewModel { Name = h.Name, Heuristic = h, IsSelected = true });
+            var checkBox = new CheckBox
+            {
+                Content = h.Name,
+                IsChecked = true,
+                Tag = h,
+                Margin = new Thickness(5, 2)
+            };
+            ParticipantList.Children.Add(checkBox);
         }
-        ParticipantList.ItemsSource = _participants;
-        LeaderboardList.ItemsSource = _results;
     }
 
     private void OnGroupFilterChanged(object sender, SelectionChangedEventArgs e)
@@ -108,93 +138,85 @@ public partial class MainWindow : Window
     }
 
     #region Single Match Logic
-    private async void OnStartClick(object sender, RoutedEventArgs e)
+
+    /// <summary>
+    /// Starts the single match timer loop (Single-Threaded, Event-Driven)
+    /// </summary>
+    private void OnStartClick(object sender, RoutedEventArgs e)
     {
-        if (_gameCts != null) return;
+        if (_gameTimer != null) return;
 
         ResetBoard();
-        _gameCts = new CancellationTokenSource();
         StartButton.IsEnabled = false;
         
         IHeuristic h1 = _singleMatchHeuristics[Player1Combo.SelectedIndex];
         IHeuristic h2 = _singleMatchHeuristics[Player2Combo.SelectedIndex];
 
-        try
+        _ai1 = new MinimaxAI(h1, depth: 6);
+        _ai2 = new MinimaxAI(h2, depth: 6);
+        _currentPlayer = Player.Red;
+
+        StatusText.Text = "Red's turn...";
+
+        // Start the single-threaded game event loop
+        _gameTimer = new DispatcherTimer();
+        _gameTimer.Interval = TimeSpan.FromMilliseconds(Math.Max(50, DelaySlider.Value));
+        _gameTimer.Tick += GameTimer_Tick;
+        _gameTimer.Start();
+    }
+
+    /// <summary>
+    /// The timer tick represents a single game turn.
+    /// Runs entirely on the main UI thread to avoid complex multithreading code.
+    /// </summary>
+    private void GameTimer_Tick(object? sender, EventArgs e)
+    {
+        _gameTimer?.Stop(); // Temporarily stop to prevent overlapping ticks if AI computation takes time
+
+        int move = (_currentPlayer == Player.Red ? _ai1! : _ai2!).GetBestMove(_board, _currentPlayer);
+
+        if (move == -1 || !_board.MakeMove(move, _currentPlayer))
         {
-            await RunGame(h1, h2, _gameCts.Token);
+            StatusText.Text = $"{(_currentPlayer == Player.Red ? "Red" : "Yellow")} forfeited the game!";
+            CleanupGame();
+            return;
         }
-        catch (OperationCanceledException)
+
+        UpdateBoardUI();
+
+        GameState state = _board.CheckGameState();
+        if (state != GameState.Ongoing)
         {
-            StatusText.Text = "Game Reset";
+            if (state == GameState.Draw)
+                StatusText.Text = "Game ended in a draw!";
+            else
+                StatusText.Text = $"{(_currentPlayer == Player.Red ? "Red" : "Yellow")} wins!";
+            CleanupGame();
+            return;
         }
-        finally
+
+        // Switch turns
+        _currentPlayer = _currentPlayer == Player.Red ? Player.Yellow : Player.Red;
+        StatusText.Text = $"{(_currentPlayer == Player.Red ? "Red" : "Yellow")}'s turn...";
+
+        // Restart timer, dynamically reading the interval in case the user adjusted the slider
+        if (_gameTimer != null)
         {
-            _gameCts = null;
-            StartButton.IsEnabled = true;
+            _gameTimer.Interval = TimeSpan.FromMilliseconds(Math.Max(50, DelaySlider.Value));
+            _gameTimer.Start();
         }
     }
 
-    private async Task RunGame(IHeuristic h1, IHeuristic h2, CancellationToken ct)
+    private void CleanupGame()
     {
-        MinimaxAI ai1 = new MinimaxAI(h1);
-        MinimaxAI ai2 = new MinimaxAI(h2);
-        Player currentPlayer = Player.Red;
-
-        while (true)
-        {
-            ct.ThrowIfCancellationRequested();
-
-            StatusText.Text = $"{(currentPlayer == Player.Red ? h1.Name : h2.Name)}'s turn ({currentPlayer})";
-            
-            int move = await Task.Run(() => 
-                (currentPlayer == Player.Red ? ai1 : ai2).GetBestMove(_board, currentPlayer), ct);
-
-            if (move == -1 || !_board.MakeMove(move, currentPlayer))
-            {
-                StatusText.Text = $"{currentPlayer} made an invalid move!";
-                break;
-            }
-
-            UpdateBoardUI();
-
-            GameState state = _board.CheckGameState();
-            if (state != GameState.Ongoing)
-            {
-                StatusText.Text = state switch
-                {
-                    GameState.RedWin => $"{h1.Name} (Red) Wins!",
-                    GameState.YellowWin => $"{h2.Name} (Yellow) Wins!",
-                    GameState.Draw => "It's a Draw!",
-                    _ => ""
-                };
-                break;
-            }
-
-            currentPlayer = currentPlayer == Player.Red ? Player.Yellow : Player.Red;
-            await Task.Delay((int)DelaySlider.Value, ct);
-        }
-    }
-
-    private void UpdateBoardUI()
-    {
-        for (int r = 0; r < Board.Rows; r++)
-        {
-            for (int c = 0; c < Board.Columns; c++)
-            {
-                Player piece = _board.GetPiece(r, c);
-                _cells[r * Board.Columns + c].Color = piece switch
-                {
-                    Player.Red => Brushes.Red,
-                    Player.Yellow => Brushes.Yellow,
-                    _ => Brushes.White
-                };
-            }
-        }
+        _gameTimer?.Stop();
+        _gameTimer = null;
+        StartButton.IsEnabled = true;
     }
 
     private void OnResetClick(object sender, RoutedEventArgs e)
     {
-        _gameCts?.Cancel();
+        CleanupGame();
         ResetBoard();
         StatusText.Text = "Select players and start";
     }
@@ -204,12 +226,43 @@ public partial class MainWindow : Window
         _board = new Board();
         UpdateBoardUI();
     }
+
+    /// <summary>
+    /// Procedural drawing of grid cells based on the underlying board array
+    /// </summary>
+    private void UpdateBoardUI()
+    {
+        for (int r = 0; r < Board.Rows; r++)
+        {
+            for (int c = 0; c < Board.Columns; c++)
+            {
+                Player piece = _board.GetPiece(r, c);
+                _uiCells[r, c].Fill = piece switch
+                {
+                    Player.Red => Brushes.Red,
+                    Player.Yellow => Brushes.Yellow,
+                    _ => Brushes.White
+                };
+            }
+        }
+    }
+
     #endregion
 
     #region Tournament Logic
+
     private async void OnRunTournamentClick(object sender, RoutedEventArgs e)
     {
-        List<ParticipantViewModel> selected = _participants.Where(p => p.IsSelected).ToList();
+        // Gather selected participants by iterating our CheckBox collection
+        List<IHeuristic> selected = new List<IHeuristic>();
+        foreach (var child in ParticipantList.Children)
+        {
+            if (child is CheckBox cb && cb.IsChecked == true && cb.Tag is IHeuristic h)
+            {
+                selected.Add(h);
+            }
+        }
+
         if (selected.Count < 2)
         {
             TournamentStatus.Text = "Select at least 2 participants";
@@ -219,11 +272,10 @@ public partial class MainWindow : Window
         _tournamentCts = new CancellationTokenSource();
         RunTournamentButton.IsEnabled = false;
         StopTournamentButton.IsEnabled = true;
-        _results.Clear();
-        foreach (ParticipantViewModel p in selected)
-        {
-            _results.Add(new TournamentResultViewModel { Name = p.Name });
-        }
+
+        // Initialize plain C# results list
+        _results = selected.Select(h => new TournamentResult { Name = h.Name }).ToList();
+        UpdateLeaderboardUI(_results);
 
         int iterations = (int)(IterationCount.Value ?? 1);
         int depth = (int)(TournamentDepth.Value ?? 4);
@@ -231,6 +283,7 @@ public partial class MainWindow : Window
 
         try
         {
+            // Background thread is used solely to prevent freezing during high-iteration matches
             await Task.Run(() => RunTournament(selected, iterations, depth, isRoundRobin, _tournamentCts.Token));
             TournamentStatus.Text = "Tournament Finished";
         }
@@ -251,10 +304,12 @@ public partial class MainWindow : Window
         _tournamentCts?.Cancel();
     }
 
-    private void RunTournament(List<ParticipantViewModel> participants, int iterations, int depth, bool isRoundRobin, CancellationToken ct)
+    private void RunTournament(List<IHeuristic> participants, int iterations, int depth, bool isRoundRobin, CancellationToken ct)
     {
-        Dictionary<string, TournamentResultViewModel> stats = _results.ToDictionary(r => r.Name);
-        int totalMatches = isRoundRobin ? (participants.Count * (participants.Count - 1) * iterations) : CalculateKnockoutMatches(participants.Count, iterations);
+        Dictionary<string, TournamentResult> stats = _results.ToDictionary(r => r.Name);
+        int totalMatches = isRoundRobin 
+            ? (participants.Count * (participants.Count - 1) * iterations) 
+            : CalculateKnockoutMatches(participants.Count, iterations);
         int matchesPlayed = 0;
 
         for (int iter = 0; iter < iterations; iter++)
@@ -270,7 +325,7 @@ public partial class MainWindow : Window
                         if (i == j) continue;
                         ct.ThrowIfCancellationRequested();
 
-                        Player winner = PlayHeadlessGame(participants[i].Heuristic, participants[j].Heuristic, depth);
+                        Player winner = PlayHeadlessGame(participants[i], participants[j], depth);
                         UpdateStats(stats, participants[i].Name, participants[j].Name, winner);
                         
                         matchesPlayed++;
@@ -280,23 +335,23 @@ public partial class MainWindow : Window
             }
             else // Knockout
             {
-                List<ParticipantViewModel> currentRound = new List<ParticipantViewModel>(participants);
+                List<IHeuristic> currentRound = new List<IHeuristic>(participants);
                 while (currentRound.Count > 1)
                 {
                     ct.ThrowIfCancellationRequested();
-                    List<ParticipantViewModel> winners = new List<ParticipantViewModel>();
+                    List<IHeuristic> winners = new List<IHeuristic>();
                     
                     for (int i = 0; i < currentRound.Count - 1; i += 2)
                     {
                         ct.ThrowIfCancellationRequested();
-                        IHeuristic h1 = currentRound[i].Heuristic;
-                        IHeuristic h2 = currentRound[i + 1].Heuristic;
+                        IHeuristic h1 = currentRound[i];
+                        IHeuristic h2 = currentRound[i + 1];
                         
                         Player winner = PlayHeadlessGame(h1, h2, depth);
-                        UpdateStats(stats, currentRound[i].Name, currentRound[i + 1].Name, winner);
+                        UpdateStats(stats, h1.Name, h2.Name, winner);
                         
-                        if (winner == Player.Yellow) winners.Add(currentRound[i + 1]);
-                        else winners.Add(currentRound[i]); // Red wins or Draw (Red proceeds on draw for knockout simplicity)
+                        if (winner == Player.Yellow) winners.Add(h2);
+                        else winners.Add(h1);
 
                         matchesPlayed++;
                         UpdateProgress(matchesPlayed, totalMatches);
@@ -310,7 +365,6 @@ public partial class MainWindow : Window
 
     private int CalculateKnockoutMatches(int participantCount, int iterations)
     {
-        // Simple approximation for progress bar
         int matchesPerIter = 0;
         int count = participantCount;
         while (count > 1)
@@ -346,46 +400,71 @@ public partial class MainWindow : Window
         }
     }
 
-    private void UpdateStats(Dictionary<string, TournamentResultViewModel> stats, string redName, string yellowName, Player winner)
+    private void UpdateStats(Dictionary<string, TournamentResult> stats, string redName, string yellowName, Player winner)
     {
-        Dispatcher.UIThread.Post(() =>
+        if (winner == Player.Red)
         {
-            if (winner == Player.Red)
-            {
-                stats[redName].Wins++;
-                stats[yellowName].Losses++;
-            }
-            else if (winner == Player.Yellow)
-            {
-                stats[yellowName].Wins++;
-                stats[redName].Losses++;
-            }
-            else
-            {
-                stats[redName].Draws++;
-                stats[yellowName].Draws++;
-            }
-            
-            stats[redName].Score = stats[redName].Wins + (stats[redName].Draws * 0.5);
-            stats[yellowName].Score = stats[yellowName].Wins + (stats[yellowName].Draws * 0.5);
-            
-            UpdateLeaderboard();
-        });
-    }
+            stats[redName].Wins++;
+            stats[yellowName].Losses++;
+        }
+        else if (winner == Player.Yellow)
+        {
+            stats[yellowName].Wins++;
+            stats[redName].Losses++;
+        }
+        else
+        {
+            stats[redName].Draws++;
+            stats[yellowName].Draws++;
+        }
 
-    private void UpdateLeaderboard()
-    {
-        List<TournamentResultViewModel> sorted = _results.OrderByDescending(r => r.Score).ThenByDescending(r => r.Wins).ToList();
+        // Sort results by Score and Wins, recalculate Rank, and push straight to GUI
+        List<TournamentResult> sorted = _results.OrderByDescending(r => r.Score).ThenByDescending(r => r.Wins).ToList();
         for (int i = 0; i < sorted.Count; i++)
         {
-            TournamentResultViewModel item = sorted[i];
-            item.Rank = i + 1;
-            
-            int oldIndex = _results.IndexOf(item);
-            if (oldIndex != i)
+            sorted[i].Rank = i + 1;
+        }
+
+        Dispatcher.UIThread.Post(() => UpdateLeaderboardUI(sorted));
+    }
+
+    /// <summary>
+    /// Procedurally clears and rebuilds grid-based rows for the Leaderboard.
+    /// This is 100% direct and eliminates complex dynamic layout binding templates.
+    /// </summary>
+    private void UpdateLeaderboardUI(List<TournamentResult> results)
+    {
+        LeaderboardList.Children.Clear();
+        foreach (var res in results)
+        {
+            var grid = new Grid
             {
-                _results.Move(oldIndex, i);
-            }
+                ColumnDefinitions = new ColumnDefinitions("60, *, 80, 80, 80, 100"),
+                Margin = new Thickness(0, 2)
+            };
+
+            var rankText = new TextBlock { Text = res.Rank.ToString(), Margin = new Thickness(5) };
+            var nameText = new TextBlock { Text = res.Name, Margin = new Thickness(5) };
+            var winsText = new TextBlock { Text = res.Wins.ToString(), Margin = new Thickness(5) };
+            var lossesText = new TextBlock { Text = res.Losses.ToString(), Margin = new Thickness(5) };
+            var drawsText = new TextBlock { Text = res.Draws.ToString(), Margin = new Thickness(5) };
+            var scoreText = new TextBlock { Text = res.Score.ToString("F1"), Margin = new Thickness(5) };
+
+            Grid.SetColumn(rankText, 0);
+            Grid.SetColumn(nameText, 1);
+            Grid.SetColumn(winsText, 2);
+            Grid.SetColumn(lossesText, 3);
+            Grid.SetColumn(drawsText, 4);
+            Grid.SetColumn(scoreText, 5);
+
+            grid.Children.Add(rankText);
+            grid.Children.Add(nameText);
+            grid.Children.Add(winsText);
+            grid.Children.Add(lossesText);
+            grid.Children.Add(drawsText);
+            grid.Children.Add(scoreText);
+
+            LeaderboardList.Children.Add(grid);
         }
     }
 
@@ -397,5 +476,20 @@ public partial class MainWindow : Window
             TournamentStatus.Text = $"Matches: {played} / {total}";
         });
     }
+
     #endregion
+}
+
+/// <summary>
+/// A plain C# data structure representing a single competitor's score stats.
+/// Zero MVVM, INotifyPropertyChanged, or complex boilerplate.
+/// </summary>
+public class TournamentResult
+{
+    public int Rank { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public int Wins { get; set; }
+    public int Losses { get; set; }
+    public int Draws { get; set; }
+    public double Score => Wins + (Draws * 0.5);
 }
