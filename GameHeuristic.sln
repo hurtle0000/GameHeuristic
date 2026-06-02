@@ -1,6 +1,7 @@
-
 Microsoft Visual Studio Solution File, Format Version 12.00
-# 
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36804.6 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{525C3D8B-01BF-4FE6-A94D-8D91DDA1F4B6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameHeuristic.Core", "src\GameHeuristic.Core\GameHeuristic.Core.csproj", "{6759FCD7-45FD-48EB-AED5-75C39369F0ED}"
@@ -10,12 +11,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameHeuristic.Tournament", "src\GameHeuristic.Tournament\GameHeuristic.Tournament.csproj", "{86111D3E-D3FA-42EF-AB48-356D904D1D0A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameHeuristic.Terminal", "src\GameHeuristic.Terminal\GameHeuristic.Terminal.csproj", "{1E5CDDDA-4873-4ABF-915A-786F452EB333}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameHeuristic.Blazor", "src\GameHeuristic.Blazor\GameHeuristic.Blazor.csproj", "{93630252-ADD7-4092-B723-418A047EED2C}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameHeuristic.Raylib", "src\GameHeuristic.Raylib\GameHeuristic.Raylib.csproj", "{235704AA-CB4B-44FB-895F-F958035E0791}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameHeuristic.WinForms", "src\GameHeuristic.WinForms\GameHeuristic.WinForms.csproj", "{86B8C0DE-9F4F-4C7A-9321-0AEB8FF68A1B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,27 +34,14 @@ Global
 		{1E5CDDDA-4873-4ABF-915A-786F452EB333}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1E5CDDDA-4873-4ABF-915A-786F452EB333}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1E5CDDDA-4873-4ABF-915A-786F452EB333}.Release|Any CPU.Build.0 = Release|Any CPU
-		{93630252-ADD7-4092-B723-418A047EED2C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{93630252-ADD7-4092-B723-418A047EED2C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{93630252-ADD7-4092-B723-418A047EED2C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{93630252-ADD7-4092-B723-418A047EED2C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{235704AA-CB4B-44FB-895F-F958035E0791}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{235704AA-CB4B-44FB-895F-F958035E0791}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{235704AA-CB4B-44FB-895F-F958035E0791}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{235704AA-CB4B-44FB-895F-F958035E0791}.Release|Any CPU.Build.0 = Release|Any CPU
-		{86B8C0DE-9F4F-4C7A-9321-0AEB8FF68A1B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{86B8C0DE-9F4F-4C7A-9321-0AEB8FF68A1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{86B8C0DE-9F4F-4C7A-9321-0AEB8FF68A1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{86B8C0DE-9F4F-4C7A-9321-0AEB8FF68A1B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{6759FCD7-45FD-48EB-AED5-75C39369F0ED} = {525C3D8B-01BF-4FE6-A94D-8D91DDA1F4B6}
 		{A4620380-9D4F-4C7A-846B-0AEB8FF6862A} = {525C3D8B-01BF-4FE6-A94D-8D91DDA1F4B6}
 		{86111D3E-D3FA-42EF-AB48-356D904D1D0A} = {525C3D8B-01BF-4FE6-A94D-8D91DDA1F4B6}
 		{1E5CDDDA-4873-4ABF-915A-786F452EB333} = {525C3D8B-01BF-4FE6-A94D-8D91DDA1F4B6}
-		{93630252-ADD7-4092-B723-418A047EED2C} = {525C3D8B-01BF-4FE6-A94D-8D91DDA1F4B6}
-		{235704AA-CB4B-44FB-895F-F958035E0791} = {525C3D8B-01BF-4FE6-A94D-8D91DDA1F4B6}
-		{86B8C0DE-9F4F-4C7A-9321-0AEB8FF68A1B} = {525C3D8B-01BF-4FE6-A94D-8D91DDA1F4B6}
 	EndGlobalSection
 EndGlobal
-
