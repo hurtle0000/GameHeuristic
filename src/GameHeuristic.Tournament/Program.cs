@@ -102,14 +102,14 @@ class Program
     static void PrintLeaderboard(Dictionary<string, Stats> stats)
     {
         Console.WriteLine("\n=== Leaderboard ===");
-        Console.WriteLine($"{"Name",-25} | {"Wins",-5} | {"Losses",-6} | {"Draws",-5} | {"Score",-5}");
-        Console.WriteLine(new string('-', 60));
+        Console.WriteLine($"{"Name",-40} | {"Wins",-5} | {"Losses",-6} | {"Draws",-5} | {"Score",-5}");
+        Console.WriteLine(new string('-', 75));
 
         IOrderedEnumerable<KeyValuePair<string, Stats>> sorted = stats.OrderByDescending(s => s.Value.Score).ThenByDescending(s => s.Value.Wins);
 
         foreach (KeyValuePair<string, Stats> entry in sorted)
         {
-            Console.WriteLine($"{entry.Key,-25} | {entry.Value.Wins,-5} | {entry.Value.Losses,-6} | {entry.Value.Draws,-5} | {entry.Value.Score,-5}");
+            Console.WriteLine($"{entry.Key,-40} | {entry.Value.Wins,-5} | {entry.Value.Losses,-6} | {entry.Value.Draws,-5} | {entry.Value.Score,-5}");
         }
     }
 }

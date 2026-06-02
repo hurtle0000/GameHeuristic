@@ -4,6 +4,8 @@ namespace GameHeuristic.Core;
 
 public class Board
 {
+    // The board is a 2D array with 0,0 as the "top-left" window and [5,6] as the "bottom-right"
+
     public const int Rows = 6;
     public const int Columns = 7;
     private readonly Player[,] _grid;
@@ -18,9 +20,15 @@ public class Board
         _grid = (Player[,])grid.Clone();
     }
 
-    public Player GetPiece(int row, int col) => _grid[row, col];
+    public Player GetPiece(int row, int col)
+    {
+        return _grid[row, col];
+    }
 
-    public Player[,] GetGridCopy() => (Player[,])_grid.Clone();
+    public Player[,] GetGridCopy()
+    {
+        return (Player[,])_grid.Clone();
+    }
 
     public bool CanMakeMove(int col)
     {
@@ -50,7 +58,10 @@ public class Board
         return true;
     }
 
-    public Board Clone() => new Board(_grid);
+    public Board Clone()
+    {
+        return new Board(_grid);
+    }
 
     public List<(int Row, int Col)> GetWinningLine()
     {

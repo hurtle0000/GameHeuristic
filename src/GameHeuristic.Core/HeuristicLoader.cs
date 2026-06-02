@@ -11,7 +11,7 @@ public static class HeuristicLoader
 
     /// <summary>
     /// Scans the assembly to find all submission folders/sub-namespaces.
-    /// E.g., returns ["Baselines", "Teacher", "Y2026"]
+    /// E.g., returns ["Baselines", "Y2026"]
     /// </summary>
     public static List<string> GetAvailableGroups()
     {
