@@ -55,7 +55,7 @@ public class Stuartivator : IHeuristic
         }
 
         b.Append(ConvertPlayerToString(board[2,0])+ConvertPlayerToString(board[3,1])+ConvertPlayerToString(board[4,2])+ConvertPlayerToString(board[5,3]));
-        //Debug.WriteLine(b.ToString())
+        // Debug.WriteLine(b.ToString())
         return _random.NextDouble();
     }
 
