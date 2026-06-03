@@ -54,7 +54,11 @@ public class Stuartivator : IHeuristic
             b.Append(" ");
         }
 
-        b.Append(ConvertPlayerToString(board[2,0])+ConvertPlayerToString(board[3,1])+ConvertPlayerToString(board[4,2])+ConvertPlayerToString(board[5,3]));
+        // add all the diagonals
+        b.Append(ConvertPlayerToString(board[2, 0]) + ConvertPlayerToString(board[3, 1]) + ConvertPlayerToString(board[4, 2]) + ConvertPlayerToString(board[5, 3]));
+        b.Append(ConvertPlayerToString(board[1,0])+ConvertPlayerToString(board[2,1])+ConvertPlayerToString(board[3,2])+ConvertPlayerToString(board[4,3]) + ConvertPlayerToString(board[5, 4]));
+        b.Append(ConvertPlayerToString(board[0, 0]) + ConvertPlayerToString(board[1, 1]) + ConvertPlayerToString(board[2, 2]) + ConvertPlayerToString(board[3, 3]) + ConvertPlayerToString(board[4, 4]) + ConvertPlayerToString(board[5, 5]));
+
         // Debug.WriteLine(b.ToString())
         return _random.NextDouble();
     }
