@@ -3,119 +3,7 @@
 This document serves as a comprehensive system design specification for the Connect 4 Heuristic Framework. It details the system architecture, data models, key algorithms, and design choices. It is designed to act as a model reference of what high-level technical documentation should contain for a Non-Exam Assessment (NEA).
 
 ---
-
-## 1. System Architecture & Component Decoupling
-
-The application is built using a **highly decoupled, modular multi-tier architecture** divided into one shared core engine library and five distinct frontend client applications. This strict separation of concerns guarantees that the core game rules and artificial intelligence remain completely independent of how the game is visualized, inputs are gathered, or platforms are targeted.
-
-```mermaid
-graph TD;
-    subgraph Shared Core Library [GameHeuristic.Core]
-        A[Board Class]
-        B[IHeuristic Interface]
-        C[MinimaxAI Search Engine]
-        D[HeuristicLoader Reflection]
-    end
-
-    subgraph Client 1: Avalonia UI [GameHeuristic.UI]
-        E[Avalonia Window]
-        F[Direct Code-Behind]
-        G[DispatcherTimer Loop]
-    end
-
-    subgraph Client 2: Console TUI [GameHeuristic.Terminal]
-        H[Retro ASCII TUI]
-        I[Synchronous Turn Loop]
-    end
-
-    subgraph Client 3: WinForms UI [GameHeuristic.WinForms]
-        J[Button Grid Form]
-        K[WinForms Timer Loop]
-    end
-
-    subgraph Client 4: Blazor Web [GameHeuristic.Blazor]
-        L[HTML / CSS Grid View]
-        M[System Timer Loop]
-    end
-
-    subgraph Client 5: Raylib 3D [GameHeuristic.Raylib]
-        N[Raylib 3D Spheres]
-        O[Hardware Frame Clock Loop]
-    end
-
-    subgraph Client 6: Headless CLI [GameHeuristic.Tournament]
-        P[CLI Program Entry]
-        Q[Rapid Tournament Runner]
-    end
-
-    E -.-> F
-    F --> A & B & C & D
-    H --> I
-    I --> A & B & C & D
-    J -.-> K
-    K --> A & B & C & D
-    L -.-> M
-    M --> A & B & C & D
-    N -.-> O
-    O --> A & B & C & D
-    P --> Q
-    Q --> A & B & C & D
-```
-
-### Shared Engine Layer:
-* **`GameHeuristic.Core` (Class Library):** Encapsulates the complete game logic (grid representation, turn-taking, win/draw detection), the `IHeuristic` interface contract, and the alpha-beta minimax search tree engine. It has **zero dependencies** on terminal inputs, graphical SDKs, web hosts, or hardware-accelerated libraries.
-
-### Swappable Presentation Tiers (Clients):
-1. **`GameHeuristic.UI` (Avalonia Desktop):** A graphical, event-driven desktop application using Avalonia. Renders the board directly using procedural XAML grid cells.
-2. **`GameHeuristic.Terminal` (Console TUI):** A retro, text-only interactive CLI application. Renders the board using color-coded ASCII shapes in the command prompt.
-3. **`GameHeuristic.WinForms` (Windows Forms):** A traditional desktop application. Renders the board as a grid of native Windows `Button` controls.
-4. **`GameHeuristic.Blazor` (HTML Web App):** A modern Web application running on ASP.NET Core. Renders the board as an interactive HTML grid styled with CSS.
-5. **`GameHeuristic.Raylib` (3D Hardware-Accelerated App):** A high-performance 3D desktop application. Renders the board using a 3D perspective camera and hardware-drawn **3D Spheres**.
-6. **`GameHeuristic.Tournament` (Headless CLI):** A high-speed runner designed to run round-robin tournaments sequentially at maximum clock speed.
-
-### 📚 Learning Resources:
-* **Video:** [What is Separation of Concerns & Coupling in Software? (Developer Direction)](https://www.youtube.com/watch?v=0ZgXF6-rA24)
-* **Tutorial:** [Introduction to C# Class Libraries (Microsoft Learn)](https://learn.microsoft.com/en-us/dotnet/core/tutorials/library-with-visual-studio)
-
----
-
-## 2. Conceptual Data Model & Class Specification
-
-The system uses strong typing, inheritance via interfaces, and decoupled models to coordinate state:
-
-```mermaid
-classDiagram
-    class IHeuristic {
-        <<interface>>
-        +string Name
-        +Evaluate(board: Player[,], player: Player) double
-    }
-
-    class Board {
-        -Player[,] _grid
-        +CanMakeMove(col: int) bool
-        +MakeMove(col: int, player: Player) bool
-        +CheckGameState() GameState
-        +GetPiece(row: int, col: int) Player
-        +Clone() Board
-    }
-
-    class MinimaxAI {
-        -IHeuristic _heuristic
-        -int _depth
-        +GetBestMove(board: Board, player: Player) int
-        -Minimax(board: Board, depth: int, isMax: bool, alpha: double, beta: double, p: Player, o: Player) double
-    }
-
-    class HeuristicLoader {
-        +GetAvailableGroups() List~string~
-        +LoadHeuristics(group: string) List~IHeuristic~
-    }
-
-    MinimaxAI --> IHeuristic : Uses for evaluation
-    Board --* MinimaxAI : Search operates on
-    IHeuristic <|.. StudentHeuristic2026 : Implements
-```
+## 1. Key components
 
 ### Component Breakdown:
 * **`IHeuristic` (Polymorphic Contract):** Defines a standard interface requiring a descriptive name and an `Evaluate` method. This acts as a mathematical evaluation contract.
@@ -129,7 +17,7 @@ classDiagram
 
 ---
 
-## 3. Data Structures & Representation Justifications
+## 2. Data Structures & Representation Justifications
 
 Selecting appropriate data structures is fundamental to high scoring design document sections:
 
@@ -146,7 +34,7 @@ Selecting appropriate data structures is fundamental to high scoring design docu
 
 ---
 
-## 4. Dynamic Loading via Reflection (Inversion of Control)
+## 3. Dynamic Loading via Reflection (Inversion of Control)
 
 In traditional systems, adding a new student heuristic requires modifying the main game runner to import and instantiate the new class. This creates **tight coupling** and maintenance overhead.
 
@@ -162,7 +50,6 @@ IEnumerable<Type> types = AppDomain.CurrentDomain.GetAssemblies()
 1. When the program starts, C# opens its own compiled binary (`Assembly`).
 2. It queries all defined classes looking for any non-abstract class that implements `IHeuristic`.
 3. It instantiates the discovered bots dynamically using `Activator.CreateInstance(type)`.
-4. **Pedagogical Benefit:** Students can create a completely new C# file in their year-group folder, define their class, and the game instantly loads them into the dropdown menus without changing any core project files.
 
 ### 📚 Learning Resources:
 * **Video:** [C# Reflection & Metadata Tutorial (tutorialsEU)](https://www.youtube.com/watch?v=yYsk_w8x0YI)
@@ -170,7 +57,7 @@ IEnumerable<Type> types = AppDomain.CurrentDomain.GetAssemblies()
 
 ---
 
-## 5. Adversarial Search: Minimax with Alpha-Beta Pruning
+## 4. Adversarial Search: Minimax with Alpha-Beta Pruning
 
 The core AI engine uses a classical search tree algorithm based on **Adversarial Game Theory**.
 
@@ -229,7 +116,7 @@ function minimax(node, depth, maximizingPlayer, alpha, beta) is
 
 ---
 
-## 6. UI Engine: Single-Threaded Event Loop (Timer-Based)
+## 5. UI Engine: Single-Threaded Event Loop (Timer-Based)
 
 Rather than using advanced multi-threaded tasks, the visual interfaces (Avalonia, WinForms, Blazor, and Raylib) implement **Single-Threaded Timer Loops** using platform-native clocks.
 
@@ -264,23 +151,7 @@ sequenceDiagram
 
 ---
 
-## 7. Alternative Designs Evaluation (Mark-Multiplier)
-
-A key requirement in A-level design documentation is demonstrating critical evaluation by comparing chosen designs against alternatives:
-
-### Alternative A: MVVM & Data Binding vs. Direct Code-Behind (GUI)
-* **MVVM Design:** Relies on ViewModels, binding properties, and change notifications (`INotifyPropertyChanged`).
-* **Direct Code-Behind (Chosen):** Dynamically populates named panel grids (`BoardGrid`, `ParticipantList`) and manipulates child controls directly in code.
-* **Justification:** While MVVM is the modern enterprise standard, it introduces massive boilerplates (ViewModels, binding XAML converters) that confuse students. Direct manipulation uses simple, standard procedural code-behinds (loops, element assignments) that are 100% transparent and easy to trace.
-
-### Alternative B: Asynchronous Tasks vs. DispatcherTimer Loops (Game Loops)
-* **Async Threading:** Uses `Task.Run` to evaluate AI moves on background worker threads, yielding via `await Task.Delay()`.
-* **DispatcherTimer (Chosen):** Fires a periodic event on the main UI thread.
-* **Justification:** Asynchronous programming introduces highly complex concepts (concurrency, race conditions, marshalling UI updates back via dispatchers). A `DispatcherTimer` runs sequentially, is completely single-threaded, and maintains an extremely clear step-by-step game loop that perfectly matches what students learn about event-driven programming.
-
----
-
-## 8. Directory & Project Structure
+## 6. Directory & Project Structure
 
 The project assets are organized cleanly by namespace and responsibility, providing students a model structure of scalable engineering:
 
@@ -309,16 +180,6 @@ GameHeuristic/
     │
     ├── GameHeuristic.Terminal/      # CLIENT 2: Retro Console ASCII TUI
     │   └── Program.cs               # Color-coded ASCII board drawing & loop
-    │
-    ├── GameHeuristic.WinForms/      # CLIENT 3: Windows Forms UI (net8.0-windows)
-    │   └── Program.cs               # Circular painted buttons, native WinForms timer
-    │
-    ├── GameHeuristic.Blazor/        # CLIENT 4: ASP.NET Core Blazor Web App
-    │   ├── Program.cs               # Minimal WebServer boot config
-    │   └── Components/App.razor     # Self-contained HTML/CSS & Blazor timer loop
-    │
-    ├── GameHeuristic.Raylib/        # CLIENT 5: Hardware 3D Game Engine (Raylib-cs)
-    │   └── Program.cs               # 3D perspective camera, 3D spheres, frame-clock loop
     │
     └── GameHeuristic.Tournament/    # CLIENT 6: High-Speed CLI Tournament Runner
         └── Program.cs               # Parses command-line groups and runs rapid tournaments

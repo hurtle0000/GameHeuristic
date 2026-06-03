@@ -78,8 +78,8 @@ public class MinimaxAI
         {
             if (state == GameState.Draw) return 0;
             if ((state == GameState.RedWin && player == Player.Red) || (state == GameState.YellowWin && player == Player.Yellow))
-                return 1000000 + depth; // Favor quicker wins
-            return -1000000 - depth; // Favor delayed losses
+                return 1000000 + depth; // Favour quicker wins
+            return -1000000 - depth; // Favour delayed losses
         }
 
         if (depth == 0)
