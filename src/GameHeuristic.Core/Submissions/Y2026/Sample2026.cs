@@ -1,18 +1,18 @@
-using System;
+ using System;
 using GameHeuristic.Core;
 
 namespace GameHeuristic.Core.Submissions.Y2026;
 
 /// <summary>
 /// A sample student submission for the class of 2026.
-/// This bot greedily tries to build its own lines of 2 and 3, completely ignoring the opponent's moves.
+/// This bot greedily tries to build its own lines of 2 completely ignoring the opponent's moves.
 /// </summary>
 public class StudentHeuristic2026 : IHeuristic
 {
     public string Name => "Student 2026 - Greedy Builder";
 
     /// <summary>
-    /// This evaluation scores moves solely on building out rows of 2, 3 or 4.  It doesn't look at the opponent.
+    /// This evaluation scores moves solely on building out rows of 2.  It doesn't look at the opponent.
     ///
     /// Look at each cell on the board that start a winning position and calculate a score for each horizontal,
     /// vertical and diagonal line that could start there.  If there is an opponent piece in the line, it
@@ -127,10 +127,9 @@ public class StudentHeuristic2026 : IHeuristic
     /// line sent as parameters.
     ///
     /// Lines with two tokens score 10
-    /// Lines with three tokens score 100
-    /// Lines with four tokens score 10000 (maximum value)
+
     ///
-    /// It doesn't matter where the spaces are in the lines of two or three
+    /// It doesn't matter where the spaces are in the lines of two
     ///
     /// If there is an opponent token anywhere in the line, it's not a possible winner so is set to 0
     /// regardless of the number of player tokens
