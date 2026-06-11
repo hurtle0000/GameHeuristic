@@ -155,11 +155,6 @@ public class StudentHeuristic2026 : IHeuristic
             else opponentCount++;
         }
 
-        // If the opponent has a piece in this window, we can't make a 4-in-a-row here.
-        if (opponentCount > 0) return 0;
-
-        if (playerCount == 4) return 10000;          // Win
-        if (playerCount == 3 && emptyCount == 1) return 100; // Prioritize lines of 3
         if (playerCount == 2 && emptyCount == 2) return 10;  // Prioritize lines of 2
         
         return 0;
