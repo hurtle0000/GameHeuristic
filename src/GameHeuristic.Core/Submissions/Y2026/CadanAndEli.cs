@@ -66,7 +66,7 @@ public class CadanAndEli : IHeuristic
         }
 
 
-
+        #region Glenn Code
         // Evaluate all possible 4-slot windows (horizontal, vertical, diagonal)
 
         // Horizontal - for each row on the board, look at the lines of 4 to the right and calculate a score
@@ -212,5 +212,6 @@ public class CadanAndEli : IHeuristic
        
 
             return 0;
+        #endregion
     }
 }
