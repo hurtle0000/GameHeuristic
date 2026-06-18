@@ -19,7 +19,51 @@ public class CadanAndEli : IHeuristic
     /// <returns></returns>
     public double Evaluate(Player[,] board, Player player)
     {
+        // Setting up useful variables such as score and enemy player
+        Player enemy = Player.None;
         double score = 0;
+        if (player == Player.Red)
+            enemy = Player.Yellow;
+        else
+            enemy = Player.Red;
+        Player empty = Player.None;
+
+        // This is the board we play on.
+        //   0 1 2 3 4 5 6
+        //  +-------------
+        // 0|X X X X - - -  
+        // 1|X X X X - - - 
+        // 2|X X X X - - -
+        // 3|X X X X - - -
+        // 4|X X X X - - -
+        // 5|X X X X - - -
+
+        // Heavily insentives AI to always pick [5,3] to start with.
+        if (board[5, 3] == player)
+        {
+            score += 100;
+            if (board[4,3] == player)
+            {
+                score += 10;
+            }
+
+        }
+
+        //For when enemy chooses best move to start.
+        else if (board[5,3] == enemy)
+        {
+            //These two moves are the best second moves when enemy player center.
+            if (board[5,2] == player)
+            {
+                score += 100;
+            }
+            if (board[5,4] == player)
+            {
+                score += 100;
+            }
+        }
+
+
 
         // Evaluate all possible 4-slot windows (horizontal, vertical, diagonal)
 
@@ -37,87 +81,87 @@ public class CadanAndEli : IHeuristic
         // 5|X X X X - - -
         //
         for (int r = 0; r < Board.Rows; r++)
-        {
-            for (int c = 0; c <= Board.Columns - 4; c++)
             {
-                score += EvaluateWindow(
-                    board[r, c], board[r, c + 1], board[r, c + 2], board[r, c + 3],
-                    player);
+                for (int c = 0; c <= Board.Columns - 4; c++)
+                {
+                    score += EvaluateWindow(
+                        board[r, c], board[r, c + 1], board[r, c + 2], board[r, c + 3],
+                        player);
+                }
             }
-        }
 
-        // Vertical - for each column on the board, look at the lines of 4 below and calculate a score
-        // 
-        // Only the windows marked X will be included in the loop
-        //
-        //   0 1 2 3 4 5 6
-        //  +-------------
-        // 0|X X X X X X X  
-        // 1|X X X X X X X 
-        // 2|X X X X X X X
-        // 3|- - - - - - -
-        // 4|- - - - - - -
-        // 5|- - - - - - -
-        //
-        for (int c = 0; c < Board.Columns; c++)
-        {
+            // Vertical - for each column on the board, look at the lines of 4 below and calculate a score
+            // 
+            // Only the windows marked X will be included in the loop
+            //
+            //   0 1 2 3 4 5 6
+            //  +-------------
+            // 0|X X X X X X X  
+            // 1|X X X X X X X 
+            // 2|X X X X X X X
+            // 3|- - - - - - -
+            // 4|- - - - - - -
+            // 5|- - - - - - -
+            //
+            for (int c = 0; c < Board.Columns; c++)
+            {
+                for (int r = 0; r <= Board.Rows - 4; r++)
+                {
+                    score += EvaluateWindow(
+                        board[r, c], board[r + 1, c], board[r + 2, c], board[r + 3, c],
+                        player);
+                }
+            }
+
+            // Diagonal (Down-Right)- for each column on the board, look at the lines of 4 down-right and calculate a score
+            // 
+            // Only the windows marked X will be included in the loop
+            //
+            //   0 1 2 3 4 5 6
+            //  +-------------
+            // 0|X X X X - - -  
+            // 1|X X X X - - - 
+            // 2|X X X X - - -
+            // 3|- - - - - - -
+            // 4|- - - - - - -
+            // 5|- - - - - - -
+            //
             for (int r = 0; r <= Board.Rows - 4; r++)
             {
-                score += EvaluateWindow(
-                    board[r, c], board[r + 1, c], board[r + 2, c], board[r + 3, c],
-                    player);
+                for (int c = 0; c <= Board.Columns - 4; c++)
+                {
+                    score += EvaluateWindow(
+                        board[r, c], board[r + 1, c + 1], board[r + 2, c + 2], board[r + 3, c + 3],
+                        player);
+                }
             }
-        }
 
-        // Diagonal (Down-Right)- for each column on the board, look at the lines of 4 down-right and calculate a score
-        // 
-        // Only the windows marked X will be included in the loop
-        //
-        //   0 1 2 3 4 5 6
-        //  +-------------
-        // 0|X X X X - - -  
-        // 1|X X X X - - - 
-        // 2|X X X X - - -
-        // 3|- - - - - - -
-        // 4|- - - - - - -
-        // 5|- - - - - - -
-        //
-        for (int r = 0; r <= Board.Rows - 4; r++)
-        {
-            for (int c = 0; c <= Board.Columns - 4; c++)
+            // Diagonal (Up-Right)- for each column on the board, look at the lines of 4 up-right and calculate a score
+            // 
+            // Only the windows marked X will be included in the loop
+            //
+            //   0 1 2 3 4 5 6
+            //  +-------------
+            // 0|- - - - - - -  
+            // 1|- - - - - - - 
+            // 2|- - - - - - -
+            // 3|X X X X - - -
+            // 4|X X X X - - -
+            // 5|X X X X - - -
+            //
+            for (int r = 3; r < Board.Rows; r++)
             {
-                score += EvaluateWindow(
-                    board[r, c], board[r + 1, c + 1], board[r + 2, c + 2], board[r + 3, c + 3],
-                    player);
+                for (int c = 0; c <= Board.Columns - 4; c++)
+                {
+                    score += EvaluateWindow(
+                        board[r, c], board[r - 1, c + 1], board[r - 2, c + 2], board[r - 3, c + 3],
+                        player);
+                }
             }
+
+            return score;
         }
-
-        // Diagonal (Up-Right)- for each column on the board, look at the lines of 4 up-right and calculate a score
-        // 
-        // Only the windows marked X will be included in the loop
-        //
-        //   0 1 2 3 4 5 6
-        //  +-------------
-        // 0|- - - - - - -  
-        // 1|- - - - - - - 
-        // 2|- - - - - - -
-        // 3|X X X X - - -
-        // 4|X X X X - - -
-        // 5|X X X X - - -
-        //
-        for (int r = 3; r < Board.Rows; r++)
-        {
-            for (int c = 0; c <= Board.Columns - 4; c++)
-            {
-                score += EvaluateWindow(
-                    board[r, c], board[r - 1, c + 1], board[r - 2, c + 2], board[r - 3, c + 3],
-                    player);
-            }
-        }
-
-        return score;
-    }
-
+    
     /// <summary>
     /// This is the calculation, which relies on having a set of 4 co-ordinates for a possible winning
     /// line sent as parameters.
@@ -155,11 +199,11 @@ public class CadanAndEli : IHeuristic
             
             if (playerCount ==3 && emptyCount ==2)
             {
-                return 7.0;
+                return 4.0;
             }
             
             
-            return 5.0;
+            return 2.0;
         
         
         }  // Prioritize lines of 2
