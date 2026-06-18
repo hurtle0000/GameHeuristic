@@ -41,25 +41,27 @@ public class CadanAndEli : IHeuristic
         // Heavily insentives AI to always pick [5,3] to start with.
         if (board[5, 3] == player)
         {
-            score += 100;
-            if (board[4,3] == player)
-            {
-                score += 10;
-            }
+            score += 1000;
+            //tries to get AI to place in tower on centre square.
+            for (int r = Board.Rows - 1; r <= 0; r--)
+                if (board[r, 3] == player)
+                {
+                    score += 2;
+                }
 
         }
 
         //For when enemy chooses best move to start.
-        else if (board[5,3] == enemy)
+        else  if (board[5,3] == enemy)
         {
             //These two moves are the best second moves when enemy player center.
             if (board[5,2] == player)
             {
-                score += 100;
+                score += 10;
             }
             if (board[5,4] == player)
             {
-                score += 100;
+                score += 10;
             }
         }
 
