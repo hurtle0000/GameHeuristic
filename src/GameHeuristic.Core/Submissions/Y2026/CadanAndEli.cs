@@ -41,13 +41,10 @@ public class CadanAndEli : IHeuristic
         // Heavily insentives AI to always pick [5,3] to start with.
         if (board[5, 3] == player)
         {
-            score += 1000;
+            score += 100;
             //tries to get AI to place in tower on centre square.
-            for (int r = Board.Rows - 1; r <= 0; r--)
-                if (board[r, 3] == player)
-                {
-                    score += 2;
-                }
+            if (board[4, 3] == enemy && board[3, 3] == player)
+            { score += 100; }
 
         }
 
@@ -60,6 +57,10 @@ public class CadanAndEli : IHeuristic
                 score += 10;
             }
             if (board[5,4] == player)
+            {
+                score += 10;
+            }
+            if (board[5,3] == enemy && board[4,3] == player)
             {
                 score += 10;
             }
@@ -201,11 +202,11 @@ public class CadanAndEli : IHeuristic
             
             if (playerCount ==3 && emptyCount ==2)
             {
-                return 4.0;
+                return 2.0;
             }
             
             
-            return 2.0;
+            return 1.0;
         
         
         }  // Prioritize lines of 2
