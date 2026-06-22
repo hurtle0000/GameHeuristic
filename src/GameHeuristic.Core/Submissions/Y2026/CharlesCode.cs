@@ -1,5 +1,6 @@
-using System;
 using GameHeuristic.Core;
+using System;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace GameHeuristic.Core.Submissions.Baselines;
 
@@ -7,7 +8,7 @@ namespace GameHeuristic.Core.Submissions.Baselines;
 
 
 // GCE test
-public class DanielCode : IHeuristic
+public class CharlesCode : IHeuristic
 {
     public string Name { get; set; } = "Daniel / Charles submission";
     private Random _random = new Random();
@@ -19,10 +20,15 @@ public class DanielCode : IHeuristic
 
         // Adding the system where it checks everything on the left
 
-        if (board[1,1))
+        for (int r = 0; r < Board.Rows; r++)
         {
-
+            for (int c = 0; c <= Board.Columns - 4; c++)
+            {
+                
+            }
         }
+
+
         return 10.0d;
     }
 }
