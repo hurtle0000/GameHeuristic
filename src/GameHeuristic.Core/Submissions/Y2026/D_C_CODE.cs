@@ -22,6 +22,7 @@ public class D_C_CODE : IHeuristic
         if (board[1,1))
         {
             epakonafnaofk  JJOFahnao Nakf mA J
+                eafafafafafafafafaf
         }
         return 10.0d;
     }
