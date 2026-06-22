@@ -5,7 +5,7 @@ namespace GameHeuristic.Core.Submissions.Y2026;
 
 public class NicheAlgorithm : IHeuristic
 {
-    public string Name => "Student 2026 - Greedy Builder";
+    public string Name => "The Nichest Algorithm of all Time";
 
     public double Evaluate(Player[,] board, Player player)
     {
