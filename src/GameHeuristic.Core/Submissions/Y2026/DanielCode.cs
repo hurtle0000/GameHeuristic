@@ -22,6 +22,7 @@ public class DanielCode : IHeuristic
         if (board[1,1))
         {
             wdadwdawdaw
+                hiya
         }
         return 10.0d;
     }
