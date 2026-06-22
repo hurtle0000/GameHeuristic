@@ -8,12 +8,251 @@ namespace GameHeuristic.Core.Submissions.Y2026
 {
     public class ThomasH : IHeuristic
     {
-        public string Name { get; set; } = "GCE2026";
+        public string Name { get; set; } = "Thomas";
         private Random _random = new Random();
 
         public double Evaluate(Player[,] board, Player player)
         {
+            double score = 0;
+
+            for(int i = 0; i < Board.Rows -1; i++)
+            {
+                for (int j = 0; j < Board.Columns -1; j++)
+                {
+                    if (board[i,j] == player)
+                    {
+                       score += SearchAround(i, j, board);
+                    }
+                    else if (board[i,j] == Player.None)
+                    {
+                        
+                    }
+                    else
+                    {
+                       // score -= SearchAround(i, j, board);
+                    }
+
+                }
+                
+            }
+
             return 10.0d;
         }
+        public double SearchAround(int i, int j, Player[,] board)
+        {
+            double score = 0;
+            double LineScore = 0;
+            Player currentplayer = board[i, j];
+            Player pos = currentplayer;
+            int increment = 0;
+            //for(int up = -1; up < 1; up++)
+            //{
+            //    for(int accr = -1; accr < 1; accr++)
+            //    {
+            //        while (pos != currentplayer)
+            //        {
+            //            pos = board[i, j - increment];
+            //            increment++;
+            //            if (pos == currentplayer)
+            //            {
+            //                LineScore++;
+            //            }
+            //            else if (pos == Player.None)
+            //            {
+            //                LineScore *= 2;
+            //            }
+            //            else
+            //            {
+            //                LineScore *= 0.5;
+            //            }
+            //        }
+            //        score += LineScore;
+            //        LineScore = 0;
+            //    }
+            //}
+            while (pos != currentplayer)
+            {
+                pos = board[i +increment, j + increment];
+                increment++;
+                if (pos == currentplayer)
+                {
+                    LineScore++;
+                }
+                else if (pos == Player.None)
+                {
+                    LineScore *= 2;
+                }
+                else
+                {
+                    LineScore *= 0.5;
+                }
+            }
+            score += LineScore;
+            LineScore = 0;
+            pos = currentplayer;
+            while (pos != currentplayer)
+            {
+                pos = board[i, j + increment];
+                increment++;
+                if (pos == currentplayer)
+                {
+                    LineScore++;
+                }
+                else if (pos == Player.None)
+                {
+                    LineScore *= 2;
+                }
+                else
+                {
+                    LineScore *= 0.5;
+                }
+            }
+            score += LineScore;
+            LineScore = 0;
+            pos = currentplayer;
+            while (pos != currentplayer)
+            {
+                pos = board[i - increment, j + increment];
+                increment++;
+                if (pos == currentplayer)
+                {
+                    LineScore++;
+                }
+                else if (pos == Player.None)
+                {
+                    LineScore *= 2;
+                }
+                else
+                {
+                    LineScore *= 0.5;
+                }
+            }
+            score += LineScore;
+            LineScore = 0;
+            pos = currentplayer;
+            while (pos != currentplayer)
+            {
+                pos = board[i + increment, j];
+                increment++;
+                if (pos == currentplayer)
+                {
+                    LineScore++;
+                }
+                else if (pos == Player.None)
+                {
+                    LineScore *= 2;
+                }
+                else
+                {
+                    LineScore *= 0.5;
+                }
+            }
+            score += LineScore;
+            LineScore = 0;
+            pos = currentplayer;
+            while (pos != currentplayer)
+            {
+                pos = board[i, j];
+                increment++;
+                if (pos == currentplayer)
+                {
+                    LineScore++;
+                }
+                else if (pos == Player.None)
+                {
+                    LineScore *= 2;
+                }
+                else
+                {
+                    LineScore *= 0.5;
+                }
+            }
+            score += LineScore;
+            LineScore = 0;
+            pos = currentplayer;
+            while (pos != currentplayer)
+            {
+                pos = board[i - increment, j];
+                increment++;
+                if (pos == currentplayer)
+                {
+                    LineScore++;
+                }
+                else if (pos == Player.None)
+                {
+                    LineScore *= 2;
+                }
+                else
+                {
+                    LineScore *= 0.5;
+                }
+            }
+            score += LineScore;
+            LineScore = 0;
+            pos = currentplayer;
+            while (pos != currentplayer)
+            {
+                pos = board[i + increment, j - increment];
+                increment++;
+                if (pos == currentplayer)
+                {
+                    LineScore++;
+                }
+                else if (pos == Player.None)
+                {
+                    LineScore *= 2;
+                }
+                else
+                {
+                    LineScore *= 0.5;
+                }
+            }
+            score += LineScore;
+            LineScore = 0;
+            pos = currentplayer;
+            while (pos != currentplayer)
+            {
+                pos = board[i, j - increment];
+                increment++;
+                if (pos == currentplayer)
+                {
+                    LineScore++;
+                }
+                else if (pos == Player.None)
+                {
+                    LineScore *= 2;
+                }
+                else
+                {
+                    LineScore *= 0.5;
+                }
+            }
+            score += LineScore;
+            LineScore = 0;
+            pos = currentplayer;
+            while (pos != currentplayer)
+            {
+                pos = board[i - increment, j - increment];
+                increment++;
+                if (pos == currentplayer)
+                {
+                    LineScore++;
+                }
+                else if (pos == Player.None)
+                {
+                    LineScore *= 2;
+                }
+                else
+                {
+                    LineScore *= 0.5;
+                }
+            }
+            score += LineScore;
+            LineScore = 0;
+            pos = currentplayer;
+
+            return score;
+        }
+
     }
 }
