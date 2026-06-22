@@ -7,7 +7,7 @@ namespace GameHeuristic.Core.Submissions.Baselines;
 
 
 // GCE test
-public class D_C_CODE : IHeuristic
+public class DanielCode : IHeuristic
 {
     public string Name { get; set; } = "Daniel / Charles submission";
     private Random _random = new Random();
