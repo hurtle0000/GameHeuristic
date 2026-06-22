@@ -23,6 +23,8 @@ public class D_C_CODE : IHeuristic
         {
             epakonafnaofk  JJOFahnao Nakf mA J
                 eafafafafafafafafaf
+                referef
+                esfsef
         }
         return 10.0d;
     }
