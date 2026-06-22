@@ -10,15 +10,12 @@ public class NicheAlgorithm : IHeuristic
 
     public double Evaluate(Player[,] board, Player player)
     {
-        for (int r = 0; r < Board.Rows; r++)
-        {
-            for (int c = 0; c <= Board.Columns; c++)
-            {
-                if (board[r, c] != player && board[r, c] != Player.None)
-                    return 10.0;
-            }
-        }
+        if (board[5,3] == player)
+            return 5;
+        else if (board[5, 3] == player || board[5, 4] == player)
+            return 4;
+
+        
         return 0.0;
     }
-
 }
