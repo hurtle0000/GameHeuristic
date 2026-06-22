@@ -24,7 +24,8 @@ public class DanielCode : IHeuristic
             epakonafnaofk  JJOFahnao Nakf mA J
                 eafafafafafafafafaf
                 referef
-                esfsef
+                esfsef#
+                afoonfaoiFAAipAFbf
         }
         return 10.0d;
     }
