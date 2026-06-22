@@ -21,11 +21,7 @@ public class DanielCode : IHeuristic
 
         if (board[1,1))
         {
-            epakonafnaofk  JJOFahnao Nakf mA J
-                eafafafafafafafafaf
-                referef
-                esfsef#
-                afoonfaoiFAAipAFbf
+
         }
         return 10.0d;
     }
