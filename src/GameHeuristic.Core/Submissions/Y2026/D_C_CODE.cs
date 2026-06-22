@@ -15,6 +15,14 @@ public class D_C_CODE : IHeuristic
     public double Evaluate(Player[,] board, Player player)
     {
         // test test test test
+
+
+        // Adding the system where it checks everything on the left
+
+        if (board[1,1))
+        {
+            epakonafnaofk  JJOFahnao Nakf mA J
+        }
         return 10.0d;
     }
 }
