@@ -212,7 +212,7 @@ public class CadanAndEli : IHeuristic
 
 
             }  // Prioritize lines of 2
-            return 3;
+            
         
             return 0;
         #endregion
