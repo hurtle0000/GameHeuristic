@@ -56,10 +56,6 @@ public class JoshuaKarlBot : IHeuristic
                             }
                         }
                     }
-                    if (a == 0 && b == 4)
-                    {
-                        score += 10;
-                    }
                 }
             }
         }
@@ -113,7 +109,7 @@ public class JoshuaKarlBot : IHeuristic
                         score -= 2;
                         break;
                     case < -2:
-                        score -= 5;
+                        score -= 3;
                         break;
                     default:
                         break;
