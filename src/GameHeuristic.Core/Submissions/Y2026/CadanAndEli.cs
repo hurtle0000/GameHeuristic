@@ -8,7 +8,7 @@ namespace GameHeuristic.Core.Submissions.Y2026;
 /// This bot greedily tries to build its own lines of 2 completely ignoring the opponent's moves.
 /// </summary>
 /// 
-/// TESTING COMMIT FROM HOME ELI
+
 public class CadanAndEli : IHeuristic
 {
     public string Name => "CadanAndEli";
@@ -199,21 +199,21 @@ public class CadanAndEli : IHeuristic
             else opponentCount++;
         }
 
-        if (playerCount == 2 && emptyCount == 2)
-        {
-            
-            if (playerCount ==3 && emptyCount ==2)
+            if (playerCount == 2 && emptyCount == 2)
             {
-                return 2.0;
-            }
-            
-            
-            return 1.0;
-        
-        
-        }  // Prioritize lines of 2
-       
 
+                if (playerCount == 3 && emptyCount == 2)
+                {
+                    return 2.0;
+                }
+
+
+                return 1.0;
+
+
+            }  // Prioritize lines of 2
+            return 3;
+        
             return 0;
         #endregion
     }
