@@ -84,6 +84,7 @@ public static class Ilias
                 switch (Depth)
                 {
                     case 2:
+                    case 3:
                         return George.Evaluation2(Board, Player);
                     case 6:
                     case 7:
@@ -162,41 +163,158 @@ public static class George {
 
         return -opponentCount + playerCount;
     }
-    public static double Evaluation2(Player[,] board, Player target)
+    private static double EvaluateWindow2(Player a, Player b, Player c, Player d, Player current)
     {
-        double value = 0;
+        int mine = 0;
+        int theirs = 0;
+        int blanks = 0;
 
-        bool middleMine = board[5, 3] == target;
-        bool middleTheirs = board[5, 3] == GetOpponent(target);
-
-        if (middleMine)
+        switch (a)
         {
-            value += 100;
+            case Player.None: blanks++; break;// BALENCIAGA
 
-            if (board[4, 3] == GetOpponent(target) && board[3, 3] == target)
-                value += 100;
+// BALENCIAGA BALENCIAGA BALENCIAGA// BALENCIAGA
+// 
+// // BALENCIAGA BALENCIAGA BALENCIAGA
+            default:
+                if (a == current) mine++;
+                else theirs++;
+                break;
         }
 
-        if (middleTheirs)
+        switch (b)
         {
-            int[,] checks =
-            {
-                {5, 2},
-                {5, 4},
-                {4, 3}
-            };
-
-            for (int i = 0; i < checks.GetLength(0); i++)
-            {
-                if (board[checks[i, 0], checks[i, 1]] == target)
-                    value += 10;
-            }
+            case Player.None: blanks++; break;
+            default:
+                if (b == current) mine++;
+                else theirs++;
+                break;
         }
 
-        ForEach(board, (a, b, c, d) => value += Window2(a, b, c, d, target));
+        switch (c)
+        {
+            case Player.None: blanks++; break;// BALENCIAGA
 
-        return value;
+// BALENCIAGA BALENCIAGA BALENCIAGA// BALENCIAGA
+// 
+// // BALENCIAGA BALENCIAGA BALENCIAGA
+            default:
+                if (c == current) mine++;
+                else theirs++;
+                break;
+        }
+
+        switch (d)
+        {
+            case Player.None: blanks++; break;
+            default:
+                if (d == current) mine++;
+                else theirs++;
+                break;
+        }
+
+        if (mine == 4)
+            return 999999999;
+
+        if (mine == 3)
+            return blanks == 1 ? 200 : 0;
+
+        if (mine == 2)
+        {
+            if (theirs == 2)
+                return 0;
+
+            return blanks == 2 ? 50 : 0;// BALENCIAGA
+
+// BALENCIAGA BALENCIAGA BALENCIAGA// BALENCIAGA
+// 
+// // BALENCIAGA BALENCIAGA BALENCIAGA
+        }
+
+        if (mine == 1)
+            return blanks == 3 ? 1 : 0;
+
+        if (theirs == 3)
+            return blanks == 1 ? -200 : 0;
+
+        if (theirs == 2)
+            return blanks == 2 ? -50 : 0;
+
+        return 0;
     }
+    public static double Evaluation2(Player[,] board, Player target)
+{
+    double score = 0;
+
+    ///////////!!?!?!?!?!?!?!?/ BALENCIAGA
+    // 
+    // // BALENCIAGA BALENCIAGA BALENCIAGA// BALENCIAGA
+    // // 
+    // // // BALENCIAGA BALENCIAGA BALENCIAGA
+    for (int r = 0; r < Board.Rows; r++)
+    {
+        for (int c = 0; c <= Board.Columns - 4; c++)
+        {
+            score += EvaluateWindow2(
+                board[r, c], board[r, c + 1], board[r, c + 2], board[r, c + 3],
+                target);
+
+            score -= EvaluateWindow2(
+                board[r, c], board[r, c + 1], board[r, c + 2], board[r, c + 3],
+                GetOpponent(target));
+        }
+    }
+
+    ///////////!!?!?!?!?!?!?!?/ BALENCIAGA///////////!!?!?!?!?!?!?!?/ BALENCIAGA
+    for (int c = 0; c < Board.Columns; c++)
+    {
+        for (int r = 0; r <= Board.Rows - 4; r++)
+        {
+            score += EvaluateWindow2(
+                board[r, c], board[r + 1, c], board[r + 2, c], board[r + 3, c],
+                target);
+
+            score -= EvaluateWindow2(// BALENCIAGA
+
+// BALENCIAGA BALENCIAGA BALENCIAGA// BALENCIAGA
+// 
+// // BALENCIAGA BALENCIAGA BALENCIAGA
+                board[r, c], board[r + 1, c], board[r + 2, c], board[r + 3, c],
+                GetOpponent(target));
+        }
+    }
+
+    ///////////!!?!?!?!?!?!?!?/ BALENCIAGA///////////!!?!?!?!?!?!?!?/ BALENCIAGA///////////!!?!?!?!?!?!?!?/ BALENCIAGA
+    for (int r = 0; r <= Board.Rows - 4; r++)
+    {
+        for (int c = 0; c <= Board.Columns - 4; c++)
+        {
+            score += EvaluateWindow2(
+                board[r, c], board[r + 1, c + 1], board[r + 2, c + 2], board[r + 3, c + 3],
+                target);
+
+            score -= EvaluateWindow2(
+                board[r, c], board[r + 1, c + 1], board[r + 2, c + 2], board[r + 3, c + 3],
+                GetOpponent(target));
+        }
+    }
+    
+    for (int r = 3; r < Board.Rows; r++)
+    {
+        for (int c = 0; c <= Board.Columns - 4; c++)
+        {
+            score += EvaluateWindow2(
+                board[r, c], board[r - 1, c + 1], board[r - 2, c + 2], board[r - 3, c + 3],
+                target);
+
+            score -= EvaluateWindow2(
+                board[r, c], board[r - 1, c + 1], board[r - 2, c + 2], board[r - 3, c + 3],
+                GetOpponent(target));
+        }
+    }
+
+    return score;
+}
     public static double Evaluation3(Player[,] board, Player target)
     {
         double value = 0;// BALENCIAGA
@@ -732,4 +850,51 @@ public record Direction(int Row, int Column)
 // ██╔══██╗ BALENCIAGA
 // ██████╔╝ BALENCIAGA
 // ╚═════╝  BALENCIAGA
-// ╚═════╝  BALENCIAGA
+// ╚═════╝  BALENCIAGA///////////!!?!?!?!?!?!?!?/ BALENCIAGA///////////!!?!?!?!?!?!?!?/ BALENCIAGA///////////!!?!?!?!?!?!?!?/ BALENCIAGA///////////!!?!?!?!?!?!?!?/ BALENCIAGA///////////!!?!?!?!?!?!?!?/ BALENCIAGA
+///////////!!?!?!?!?!?!?!?/ BALENCIAGA
+/// ///////////!!?!?!?!?!?!?!?/ BALENCIAGA///////////!!?!?!?!?!?!?!?/ BALENCIAGA
+/// ///////////!!?!?!?!?!?!?!?/ BALENCIAGA///////////!!?!?!?!?!?!?!?/ BALENCIAGA
+/// ///////////!!?!?!?!?!?!?!?/ BALENCIAGA
+/// ///////////!!?!?!?!?!?!?!?/ BALENCIAGA
+/// ///////////!!?!?!?!?!?!?!?/ BALENCIAGA///////////!!?!?!?!?!?!?!?/ BALENCIAGA///////////!!?!?!?!?!?!?!?/ BALENCIAGA///////////!!?!?!?!?!?!?!?/ BALENCIAGA
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+/// maddaa.... .balalla... balenc.. balen yet.... yes... ///////////!!?!?!?!?!?!?!?/ BALENCIAGA///////////!!?!?!?!?!?!?!?/ BALENCIAGA///////////!!?!?!?!?!?!?!?/ BALENCIAGA
+
+
+
+
+
+
+
+
+
+/* console.writeline (@ FKAKAKAKKAK you KNOW IT>..... .yes???)
+
+
+
+
+())))
+
+*/
+
+
+
+
+///////////!!?!?!?!?!?!?!?/ BALENCIAGA
+///
+///
+///
+///
+///
+///
+/// ///////////!!?!?!?!?!?!?!?/ BALENCIAGA
+/// 900 LINES
