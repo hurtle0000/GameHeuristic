@@ -9,7 +9,7 @@ namespace GameHeuristic.Core.Submissions.Y2026;
 /// </summary>
 public class StudentHeuristic2026 : IHeuristic
 {
-    public string Name => "James&JPDestroyer??";
+    public string Name => "James&JPDestroyer";
 
     private static int[,] Weights = new int[Board.Rows, Board.Columns]
     {
