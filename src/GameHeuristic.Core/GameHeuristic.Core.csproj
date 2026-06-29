@@ -6,4 +6,14 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="Submissions\Baselines\GCEtest.cs" />
+    <Compile Remove="Submissions\Baselines\Sample2026.cs" />
+    <Compile Remove="Submissions\Baselines\StarterHeuristics.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Submissions\Baselines\" />
+  </ItemGroup>
+
 </Project>

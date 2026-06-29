@@ -9,6 +9,8 @@ class Program
 {
     static void Main(string[] args)
     {
+        int runs = 1; // default to a single run
+
         Console.WriteLine("=== Connect 4 Heuristic Tournament ===");
         
         string group = "All";
@@ -17,6 +19,12 @@ class Program
             if ((args[i] == "--group" || args[i] == "-g") && i + 1 < args.Length)
             {
                 group = args[i + 1];
+                i++;
+            }
+
+            if ((args[i] == "--runs" || args[i] == "-r") && i + 1 < args.Length)
+            {
+                runs = Int32.Parse(args[i + 1]);
                 i++;
             }
         }
@@ -33,39 +41,52 @@ class Program
             return;
         }
 
+        if (runs < 0)
+        {
+            Console.WriteLine($"You must have at least 1 run in a tournament.");
+            return;
+        }
+        else
+        {
+            Console.WriteLine($"The tournament will be {runs} runs with each AI playing as Red and Yellow against all othere players");
+        }
+
         Console.WriteLine($"Found {heuristics.Count} heuristics for group '{group}'.");
         Dictionary<string, Stats> stats = heuristics.ToDictionary(h => h.Name, h => new Stats());
 
-        // Round Robin: Each plays every other twice (once as Red, once as Yellow)
-        for (int i = 0; i < heuristics.Count; i++)
+        for (int r = 0; r < runs; r++)
         {
-            for (int j = 0; j < heuristics.Count; j++)
+            // Round Robin: Each plays every other twice (once as Red, once as Yellow)
+            for (int i = 0; i < heuristics.Count; i++)
             {
-                if (i == j) continue;
+                for (int j = 0; j < heuristics.Count; j++)
+                {
+                    if (i == j) continue;
 
-                IHeuristic h1 = heuristics[i];
-                IHeuristic h2 = heuristics[j];
+                    IHeuristic h1 = heuristics[i];
+                    IHeuristic h2 = heuristics[j];
 
-                Console.Write($"Match: {h1.Name} (Red) vs {h2.Name} (Yellow) ... ");
-                Player winner = PlayGame(h1, h2);
-                
-                if (winner == Player.Red)
-                {
-                    stats[h1.Name].Wins++;
-                    stats[h2.Name].Losses++;
-                    Console.WriteLine($"{h1.Name} wins!");
-                }
-                else if (winner == Player.Yellow)
-                {
-                    stats[h2.Name].Wins++;
-                    stats[h1.Name].Losses++;
-                    Console.WriteLine($"{h2.Name} wins!");
-                }
-                else
-                {
-                    stats[h1.Name].Draws++;
-                    stats[h2.Name].Draws++;
-                    Console.WriteLine("Draw!");
+                    Console.Write($"Match: {h1.Name} (Red) vs {h2.Name} (Yellow) ... ");
+                    Player winner = PlayGame(h1, h2);
+
+                    if (winner == Player.Red)
+                    {
+                        stats[h1.Name].Wins++;
+                        stats[h2.Name].Losses++;
+                        Console.WriteLine($"{h1.Name} wins!");
+                    }
+                    else if (winner == Player.Yellow)
+                    {
+                        stats[h2.Name].Wins++;
+                        stats[h1.Name].Losses++;
+                        Console.WriteLine($"{h2.Name} wins!");
+                    }
+                    else
+                    {
+                        stats[h1.Name].Draws++;
+                        stats[h2.Name].Draws++;
+                        Console.WriteLine("Draw!");
+                    }
                 }
             }
         }

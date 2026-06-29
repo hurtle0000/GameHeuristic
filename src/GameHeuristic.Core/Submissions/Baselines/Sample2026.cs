@@ -1,7 +1,6 @@
 using System;
-using GameHeuristic.Core;
 
-namespace GameHeuristic.Core.Submissions.Y2026;
+namespace GameHeuristic.Core.Submissions.Baselines;
 
 /// <summary>
 /// A sample student submission for the class of 2026.
