@@ -200,6 +200,7 @@ public class DanielCharlescode : IHeuristic
         {
             return -1000000;
         }
+        return 0;
     }
     
 }
