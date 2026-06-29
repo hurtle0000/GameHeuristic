@@ -1,0 +1,214 @@
+using GameHeuristic.Core;
+using System;
+using System.ComponentModel;
+using System.Reflection.Metadata.Ecma335;
+
+namespace GameHeuristic.Core.Submissions.Y2026;
+
+/// <summary>
+/// A sample student submission for the class of 2026.
+/// This bot greedily tries to build its own lines of 2 completely ignoring the opponent's moves.
+/// </summary>
+public class DanielCharlescode : IHeuristic
+{
+    public string Name => "Daniel_Charles_Submission";
+
+    /// <summary>
+    /// This evaluation scores moves solely on building out rows of 2.  It doesn't look at the opponent.
+    ///
+    /// Look at each cell on the board that start a winning position and calculate a score for each horizontal,
+    /// vertical and diagonal line that could start there.  If there is an opponent piece in the line, it
+    /// can't be a winning position, so score that zero
+    /// </summary>
+    /// <param name="board"></param>
+    /// <param name="player"></param>
+    /// <returns></returns>
+    public double Evaluate(Player[,] board, Player player)
+    {
+        double score = 0;
+        Player opponent;
+        if (player == Player.Yellow)
+        {
+            opponent = Player.Red;
+        }
+        else
+        {
+            opponent = Player.Yellow;
+        }
+
+        // Evaluate all possible 4-slot windows (horizontal, vertical, diagonal)
+
+        // Horizontal - for each row on the board, look at the lines of 4 to the right and calculate a score
+        // 
+        // Only the windows marked X will be included in the loop
+        //
+        //   0 1 2 3 4 5 6
+        //  +-------------
+        // 0|X X X X - - -  
+        // 1|X X X X - - - 
+        // 2|X X X X - - -
+        // 3|X X X X - - -
+        // 4|X X X X - - -
+        // 5|X X X X - - -
+        //
+        for (int r = 0; r < Board.Rows; r++)
+        {
+            for (int c = 0; c <= Board.Columns - 4; c++)
+            {
+                score += EvaluateWindow(
+                    board[r, c], board[r, c + 1], board[r, c + 2], board[r, c + 3],
+                    player);
+                score -= EvaluateWindow(board[r, c], board[r, c + 1], board[r, c + 2], board[r, c + 3], opponent); // reduce the score based on enemy too, so if its god for enemy we decrease the score by a lot
+            }
+        }
+
+        // Vertical - for each column on the board, look at the lines of 4 below and calculate a score
+        // 
+        // Only the windows marked X will be included in the loop
+        //
+        //   0 1 2 3 4 5 6
+        //  +-------------
+        // 0|X X X X X X X  
+        // 1|X X X X X X X 
+        // 2|X X X X X X X
+        // 3|- - - - - - -
+        // 4|- - - - - - -
+        // 5|- - - - - - -
+        //
+        for (int c = 0; c < Board.Columns; c++)
+        {
+            for (int r = 0; r <= Board.Rows - 4; r++)
+            {
+                score += EvaluateWindow(
+                    board[r, c], board[r + 1, c], board[r + 2, c], board[r + 3, c],
+                    player);
+                score -= EvaluateWindow(board[r, c], board[r + 1, c], board[r + 2, c], board[r + 3, c], opponent); // reduce the score based on enemy too, so if its god for enemy we decrease the score by a lot
+            }
+        }
+
+        // Diagonal (Down-Right)- for each column on the board, look at the lines of 4 down-right and calculate a score
+        // 
+        // Only the windows marked X will be included in the loop
+        //
+        //   0 1 2 3 4 5 6
+        //  +-------------
+        // 0|X X X X - - -  
+        // 1|X X X X - - - 
+        // 2|X X X X - - -
+        // 3|- - - - - - -
+        // 4|- - - - - - -
+        // 5|- - - - - - -
+        //
+        for (int r = 0; r <= Board.Rows - 4; r++)
+        {
+            for (int c = 0; c <= Board.Columns - 4; c++)
+            {
+                score += EvaluateWindow(
+                    board[r, c], board[r + 1, c + 1], board[r + 2, c + 2], board[r + 3, c + 3],
+                    player);
+                score -= EvaluateWindow(board[r, c], board[r + 1, c + 1], board[r + 2, c + 2], board[r + 3, c + 3], opponent); // reduce the score based on enemy too, so if its god for enemy we decrease the score by a lot
+            }
+        }
+
+        // Diagonal (Up-Right)- for each column on the board, look at the lines of 4 up-right and calculate a score
+        // 
+        // Only the windows marked X will be included in the loop
+        //
+        //   0 1 2 3 4 5 6
+        //  +-------------
+        // 0|- - - - - - -  
+        // 1|- - - - - - - 
+        // 2|- - - - - - -
+        // 3|X X X X - - -
+        // 4|X X X X - - -
+        // 5|X X X X - - -
+        //
+        for (int r = 3; r < Board.Rows; r++)
+        {
+            for (int c = 0; c <= Board.Columns - 4; c++)
+            {
+                score += EvaluateWindow(
+                    board[r, c], board[r - 1, c + 1], board[r - 2, c + 2], board[r - 3, c + 3],
+                    player);
+                score -= EvaluateWindow(board[r, c], board[r - 1, c + 1], board[r - 2, c + 2], board[r - 3, c + 3], opponent); // reduce the score based on enemy too, so if its god for enemy we decrease the score by a lot
+            }
+        }
+
+        int centerCol = Board.Columns / 2;
+        for (int r = 0; r < Board.Rows; r++)
+        {
+            if (board[r, centerCol] == player) score += 30; // centre collumn
+            else if (board[r, centerCol - 1] == player || board[r, centerCol + 1] == player) score += 10; // collumns adjacent to that
+        }
+
+        return score;
+    }
+
+    /// <summary>
+    /// This is the calculation, which relies on having a set of 4 co-ordinates for a possible winning
+    /// line sent as parameters.
+    ///
+    /// Lines with two tokens score 10
+
+    ///
+    /// It doesn't matter where the spaces are in the lines of two
+    ///
+    /// If there is an opponent token anywhere in the line, it's not a possible winner so is set to 0
+    /// regardless of the number of player tokens
+    /// </summary>
+    /// <param name="p1"></param>
+    /// <param name="p2"></param>
+    /// <param name="p3"></param>
+    /// <param name="p4"></param>
+    /// <param name="player"></param>
+    /// <returns></returns>
+    ///
+
+    private double EvaluateWindow(Player p1, Player p2, Player p3, Player p4, Player player)
+    {
+        int playerCount = 0;
+        int opponentCount = 0;
+        int emptyCount = 0;
+
+        Player[] window = { p1, p2, p3, p4 };
+        foreach (Player p in window)
+        {
+            if (p == player) playerCount++;
+            else if (p == Player.None) emptyCount++;
+            else opponentCount++;
+        }
+
+        if (opponentCount > 0) return 0;
+
+        if (playerCount == 2 & emptyCount == 2)
+        {
+            return 10;
+        }
+        if (playerCount == 3 & emptyCount == 1)
+        {
+            return 100;
+        }
+        if (playerCount == 4 & emptyCount == 0)
+        {
+            return 100000;
+        }
+        if (playerCount == 1 & emptyCount == 3)
+        {
+            return 0;
+        }
+        if (opponentCount == 2 & emptyCount == 2)
+        {
+            return -11;
+        }
+        if (opponentCount == 3 & emptyCount == 1)
+        {
+            return -101;
+        }
+        if (opponentCount == 4 & emptyCount == 0)
+        {
+            return -1000000;
+        }
+        return 0;
+    }
+    
+}
