@@ -11,7 +11,7 @@ public class Connect4 : IHeuristic
     // BALENCIAGA
 
 // BALENCIAGA BALENCIAGA BALENCIAGA
-    public string Name => " george/ilias";
+    public string Name => "george/ilias";
     
     // Initialise Ilias class ((found below) with StackTrace (performance), AI, and Board information)
     public double Evaluate(Player[,] Board, Player Player)
