@@ -19,7 +19,7 @@ public class NicheAlgorithm : IHeuristic
 
         if (board[5, 3] == player)
             return 5;
-        else if (board[5, 3] == player || board[5, 4] == player)
+        else if (board[5, 2] == player || board[5, 4] == player)
             return 4;
 
         for (int r = 0; r < 3; r++)
