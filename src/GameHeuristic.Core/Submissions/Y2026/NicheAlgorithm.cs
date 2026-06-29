@@ -12,7 +12,7 @@ public class NicheAlgorithm : IHeuristic
     {
         Player enemyPlayer;
         if (player == Player.Red)
-            enemyPlayer == Player.Yellow;
+            enemyPlayer = Player.Yellow;
         else
             enemyPlayer = Player.Red;
 
@@ -25,8 +25,8 @@ public class NicheAlgorithm : IHeuristic
         {
             for (int c = 0; c <= Board.Columns - 4; c++)
             {
-                if (board[r,c + 1] == enemyPlayer,
-                    board[r,c + 2] == enemyPlayer,
+                if (board[r,c + 1] == enemyPlayer &&
+                    board[r,c + 2] == enemyPlayer &&
                     board[r, c + 3] == enemyPlayer)
                 return 10;
             }
