@@ -16,6 +16,7 @@ public class NicheAlgorithm : IHeuristic
         else
             enemyPlayer = Player.Red;
 
+
         if (board[5, 3] == player)
             return 5;
         else if (board[5, 3] == player || board[5, 4] == player)
@@ -29,6 +30,17 @@ public class NicheAlgorithm : IHeuristic
                     board[r,c + 2] == enemyPlayer &&
                     board[r, c + 3] == enemyPlayer)
                 return 10;
+            }
+        }
+
+        for (int c = 0; c < Board.Columns; c++)
+        {
+            for (int r = 0; r <= Board.Rows - 4; r++)
+            {
+                if (board[r,c + 1] == enemyPlayer &&
+                    board[r,c + 2] == enemyPlayer &&
+                    board[r, c + 3] == enemyPlayer)
+                return 15;
             }
         }
 
