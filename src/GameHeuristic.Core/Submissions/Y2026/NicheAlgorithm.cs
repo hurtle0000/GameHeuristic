@@ -1,5 +1,5 @@
 using GameHeuristic.Core;
- using System;
+using System;
 using static System.Formats.Asn1.AsnWriter;
 
 namespace GameHeuristic.Core.Submissions.Y2026;
@@ -21,21 +21,50 @@ public class NicheAlgorithm : IHeuristic
         {
             for (int c = 0; c <= Board.Columns - 4; c++)
             {
-                if (board[r,c + 1] == enemyPlayer &&
-                    board[r,c + 2] == enemyPlayer &&
+                if (board[r, c + 1] == enemyPlayer &&
+                    board[r, c + 2] == enemyPlayer &&
                     board[r, c + 3] == enemyPlayer)
-                score += 10;
+                    score += 10;
+
+                if (board[r, c + 1] == player &&
+                    board[r, c + 2] == player &&
+                    board[r, c + 3] == player)
+                    score += 50;
             }
         }
+
+        for (int r = 0; r < Board.Rows; r++)
+        {
+            for (int c = 3; c < Board.Columns; c++)
+            {
+                if (board[r, c] == enemyPlayer &&
+                    board[r, c - 1] == enemyPlayer &&
+                    board[r, c - 2] == enemyPlayer &&
+                    board[r, c - 3] == enemyPlayer)
+                    score += 10;
+
+                if (board[r, c] == player &&
+                    board[r, c - 1] == player &&
+                    board[r, c - 2] == player &&
+                    board[r, c - 3] == player)
+                    score += 50;
+            }
+        }
+
 
         for (int c = 0; c < Board.Columns; c++)
         {
             for (int r = 0; r <= Board.Rows - 4; r++)
             {
-                if (board[r,c + 1] == enemyPlayer &&
-                    board[r,c + 2] == enemyPlayer &&
-                    board[r, c + 3] == enemyPlayer)
-                score += 10;
+                if (board[r + 1, c] == enemyPlayer &&
+                    board[r + 2, c] == enemyPlayer &&
+                    board[r + 3, c] == enemyPlayer)
+                    score += 10;
+
+                if (board[r + 1, c] == player &&
+                    board[r + 2, c] == player &&
+                    board[r + 3, c] == player)
+                    score += 50;
             }
         }
 
