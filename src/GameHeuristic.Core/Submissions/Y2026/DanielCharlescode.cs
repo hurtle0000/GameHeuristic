@@ -50,7 +50,7 @@ public class DanielCharlescode : IHeuristic
                 score += EvaluateWindow(
                     board[r, c], board[r, c + 1], board[r, c + 2], board[r, c + 3],
                     player);
-                score -= 0.9 * EvaluateWindow(board[r, c], board[r, c + 1], board[r, c + 2], board[r, c + 3], opponent); // reduce the score based on enemy too, so if its god for enemy we decrease the score by a lot
+                score -= EvaluateWindow(board[r, c], board[r, c + 1], board[r, c + 2], board[r, c + 3], opponent); // reduce the score based on enemy too, so if its god for enemy we decrease the score by a lot
             }
         }
 
@@ -74,7 +74,7 @@ public class DanielCharlescode : IHeuristic
                 score += EvaluateWindow(
                     board[r, c], board[r + 1, c], board[r + 2, c], board[r + 3, c],
                     player);
-                score -= 0.9 * EvaluateWindow(board[r, c], board[r + 1, c], board[r + 2, c], board[r + 3, c], opponent); // reduce the score based on enemy too, so if its god for enemy we decrease the score by a lot
+                score -= EvaluateWindow(board[r, c], board[r + 1, c], board[r + 2, c], board[r + 3, c], opponent); // reduce the score based on enemy too, so if its god for enemy we decrease the score by a lot
             }
         }
 
@@ -98,7 +98,7 @@ public class DanielCharlescode : IHeuristic
                 score += EvaluateWindow(
                     board[r, c], board[r + 1, c + 1], board[r + 2, c + 2], board[r + 3, c + 3],
                     player);
-                score -= 0.9 * EvaluateWindow(board[r, c], board[r + 1, c + 1], board[r + 2, c + 2], board[r + 3, c + 3], opponent); // reduce the score based on enemy too, so if its god for enemy we decrease the score by a lot
+                score -= EvaluateWindow(board[r, c], board[r + 1, c + 1], board[r + 2, c + 2], board[r + 3, c + 3], opponent); // reduce the score based on enemy too, so if its god for enemy we decrease the score by a lot
             }
         }
 
@@ -122,7 +122,7 @@ public class DanielCharlescode : IHeuristic
                 score += EvaluateWindow(
                     board[r, c], board[r - 1, c + 1], board[r - 2, c + 2], board[r - 3, c + 3],
                     player);
-                score -= 0.9 * EvaluateWindow(board[r, c], board[r - 1, c + 1], board[r - 2, c + 2], board[r - 3, c + 3], opponent); // reduce the score based on enemy too, so if its god for enemy we decrease the score by a lot
+                score -= EvaluateWindow(board[r, c], board[r - 1, c + 1], board[r - 2, c + 2], board[r - 3, c + 3], opponent); // reduce the score based on enemy too, so if its god for enemy we decrease the score by a lot
             }
         }
 
@@ -172,14 +172,34 @@ public class DanielCharlescode : IHeuristic
 
         if (opponentCount > 0) return 0;
 
-        return playerCount switch
+        if (playerCount == 2 & emptyCount == 2)
         {
-            4 => 1000000,
-            3 => 100,
-            2 => 10,
-            1 => 0,
-            0 => 0,
-        };
+            return 10;
+        }
+        if (playerCount == 3 & emptyCount == 1)
+        {
+            return 100;
+        }
+        if (playerCount == 4 & emptyCount == 0)
+        {
+            return 100000;
+        }
+        if (playerCount == 1 & emptyCount == 3)
+        {
+            return 0;
+        }
+        if (opponentCount == 2 & emptyCount == 2)
+        {
+            return -11;
+        }
+        if (opponentCount == 3 & emptyCount == 1)
+        {
+            return -101;
+        }
+        if (opponentCount == 4 & emptyCount == 0)
+        {
+            return -1000000;
+        }
     }
     
 }
