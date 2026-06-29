@@ -1,6 +1,6 @@
  using System;
 using GameHeuristic.Core;
- 
+
 namespace GameHeuristic.Core.Submissions.Y2026;
 
 /// <summary>
