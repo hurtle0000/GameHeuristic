@@ -7,7 +7,7 @@ namespace GameHeuristic.Core.Submissions.Y2026;
 /// A sample student submission for the class of 2026.
 /// This bot greedily tries to build its own lines of 2 completely ignoring the opponent's moves.
 /// </summary>
-public class StudentHeuristic2026 : IHeuristic
+public class JamesandJP : IHeuristic
 {
     public string Name => "James&JPDestroyer";
 
