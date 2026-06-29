@@ -12,7 +12,7 @@ public class StudentHeuristic2026 : IHeuristic
     public string Name => "Student 2026 - Greedy Builder";
 
     /// <summary>
-    /// This evaluation scores moves solely on building out rows of 2, 3 or 4.  It doesn't look at the opponent.
+    /// This evaluation scores moves solely on building out rows of 2  It doesn't look at the opponent.
     ///
     /// Look at each cell on the board that start a winning position and calculate a score for each horizontal,
     /// vertical and diagonal line that could start there.  If there is an opponent piece in the line, it
@@ -127,7 +127,6 @@ public class StudentHeuristic2026 : IHeuristic
     /// line sent as parameters.
     ///
     /// Lines with two tokens score 10
-    /// Lines with three tokens score 100
     /// Lines with four tokens score 10000 (maximum value)
     ///
     /// It doesn't matter where the spaces are in the lines of two or three
@@ -159,7 +158,6 @@ public class StudentHeuristic2026 : IHeuristic
         if (opponentCount > 0) return 0;
 
         if (playerCount == 4) return 10000;          // Win
-        if (playerCount == 3 && emptyCount == 1) return 100; // Prioritize lines of 3
         if (playerCount == 2 && emptyCount == 2) return 10;  // Prioritize lines of 2
         
         return 0;
