@@ -10,17 +10,12 @@ public class NicheAlgorithm : IHeuristic
 
     public double Evaluate(Player[,] board, Player player)
     {
-        Player enemyPlayer;
-        if (player == Player.Red)
-            enemyPlayer = Player.Yellow;
-        else
-            enemyPlayer = Player.Red;
+        Player enemyPlayer = (player == Player.Red) ? Player.Yellow : Player.Red;
+        int score = 0;
 
-
-        if (board[5, 3] == player)
-            return 5;
-        else if (board[5, 2] == player || board[5, 4] == player)
-            return 4;
+        for (int r = 0; r < Board.Rows; r++)
+            if (board[r, Board.Columns / 2] == player)
+                score += 3;
 
         for (int r = 0; r < 3; r++)
         {
@@ -29,7 +24,7 @@ public class NicheAlgorithm : IHeuristic
                 if (board[r,c + 1] == enemyPlayer &&
                     board[r,c + 2] == enemyPlayer &&
                     board[r, c + 3] == enemyPlayer)
-                return 10;
+                score += 10;
             }
         }
 
@@ -40,10 +35,10 @@ public class NicheAlgorithm : IHeuristic
                 if (board[r,c + 1] == enemyPlayer &&
                     board[r,c + 2] == enemyPlayer &&
                     board[r, c + 3] == enemyPlayer)
-                return 15;
+                score += 10;
             }
         }
 
-        return 0.0;
+        return score;
     }
 }
