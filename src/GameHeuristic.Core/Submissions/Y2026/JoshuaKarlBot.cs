@@ -37,7 +37,7 @@ public class JoshuaKarlBot : IHeuristic
                         {
                             if ((a + c > 0 && a + c < board.GetLength(0)) && (b + d > 0 && b + d < board.GetLength(1)))
                             {
-                                if (board[a + c, b + d] == player)
+                                if (board[a + c, b + d] == player && ((c == 0) && (d == 0)))
                                 {
                                     score += 1;
                                     bonus[a,b] += 1;
@@ -71,21 +71,29 @@ public class JoshuaKarlBot : IHeuristic
                         {
                             if ((a + c > 0 && a + c < board.GetLength(0)) && (b + d > 0 && b + d < board.GetLength(1)))
                             {
-                                if (board[a + c, b + d] == enemy)
+                                if (board[a + c, b + d] == enemy && ((c == 0) && (d == 0)))
                                 {
                                     score -= 0.9;
                                     bonus[a, b] -= 1;
                                     if ((a + (3 * c) > 0 && a + (3 * c) < board.GetLength(0)) && (b + (3 * d) > 0 && b + (3 * d) < board.GetLength(1)))
                                     {
-                                        if ((board[a + c + c, b + d + d] != player) && (board[a + c + c + c, b + d + d + d] != player)) 
+                                        if ((board[a + c + c, b + d + d] == enemy) && (board[a + c + c + c, b + d + d + d] != player)) 
                                         {
-                                            score -= 3;
+                                            score -= 7;
+                                        }
+                                        else if ((board[a + c + c, b + d + d] != player) && (board[a + c + c + c, b + d + d + d] == enemy))
+                                        {
+                                            score -= 6;
+                                        }
+                                        else if ((board[a + c + c, b + d + d] != player) && (board[a + c + c + c, b + d + d + d] != player))
+                                        {
+                                            score -= 5;
                                         }
                                     }
                                 }
                                 else if (board[a + c, b + d] == Player.None)
                                 {
-                                    score -= 0.1;
+                                    score -= 0.11;
                                 }
                             }
                         }
@@ -109,7 +117,10 @@ public class JoshuaKarlBot : IHeuristic
                         score -= 2;
                         break;
                     case < -2:
-                        score -= 3;
+                        score -= 5;
+                        break;
+                    case -1:
+                        score -= 0.05;
                         break;
                     default:
                         break;
