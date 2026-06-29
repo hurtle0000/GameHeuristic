@@ -50,7 +50,7 @@ public class DanielCharlescode : IHeuristic
                 score += EvaluateWindow(
                     board[r, c], board[r, c + 1], board[r, c + 2], board[r, c + 3],
                     player);
-                score -= 0.9 * EvaluateWindow(board[r, c], board[r, c + 1], board[r, c + 2], board[r, c + 3], opponent);
+                score -= 0.9 * EvaluateWindow(board[r, c], board[r, c + 1], board[r, c + 2], board[r, c + 3], opponent); // reduce the score based on enemy too, so if its god for enemy we decrease the score by a lot
             }
         }
 
@@ -74,7 +74,7 @@ public class DanielCharlescode : IHeuristic
                 score += EvaluateWindow(
                     board[r, c], board[r + 1, c], board[r + 2, c], board[r + 3, c],
                     player);
-                score -= 0.9 * EvaluateWindow(board[r, c], board[r + 1, c], board[r + 2, c], board[r + 3, c], opponent);
+                score -= 0.9 * EvaluateWindow(board[r, c], board[r + 1, c], board[r + 2, c], board[r + 3, c], opponent); // reduce the score based on enemy too, so if its god for enemy we decrease the score by a lot
             }
         }
 
@@ -98,7 +98,7 @@ public class DanielCharlescode : IHeuristic
                 score += EvaluateWindow(
                     board[r, c], board[r + 1, c + 1], board[r + 2, c + 2], board[r + 3, c + 3],
                     player);
-                score -= 0.9 * EvaluateWindow(board[r, c], board[r + 1, c + 1], board[r + 2, c + 2], board[r + 3, c + 3], opponent);
+                score -= 0.9 * EvaluateWindow(board[r, c], board[r + 1, c + 1], board[r + 2, c + 2], board[r + 3, c + 3], opponent); // reduce the score based on enemy too, so if its god for enemy we decrease the score by a lot
             }
         }
 
@@ -122,7 +122,7 @@ public class DanielCharlescode : IHeuristic
                 score += EvaluateWindow(
                     board[r, c], board[r - 1, c + 1], board[r - 2, c + 2], board[r - 3, c + 3],
                     player);
-                score -= 0.9 * EvaluateWindow(board[r, c], board[r - 1, c + 1], board[r - 2, c + 2], board[r - 3, c + 3], opponent);
+                score -= 0.9 * EvaluateWindow(board[r, c], board[r - 1, c + 1], board[r - 2, c + 2], board[r - 3, c + 3], opponent); // reduce the score based on enemy too, so if its god for enemy we decrease the score by a lot
             }
         }
 
