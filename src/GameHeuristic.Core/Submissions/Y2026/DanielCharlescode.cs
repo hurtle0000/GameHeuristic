@@ -26,7 +26,15 @@ public class DanielCharlescode : IHeuristic
     public double Evaluate(Player[,] board, Player player)
     {
         double score = 0;
-        Player opponent = (player == Player.Yellow) ? Player.Red : Player.Yellow; // finds me the opponent
+        Player opponent;
+        if (player == Player.Yellow)
+        {
+            opponent = Player.Red;
+        }
+        else
+        {
+            opponent = Player.Yellow;
+        }
 
         // Evaluate all possible 4-slot windows (horizontal, vertical, diagonal)
 
