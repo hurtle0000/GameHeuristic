@@ -1,7 +1,7 @@
 using System;
 using GameHeuristic.Core;
 
-namespace GameHeuristic.Core.Submissions.Baselines;
+namespace GameHeuristic.Core.Submissions.Y2026;
 
 // A couple of example player heuristics for reference
 

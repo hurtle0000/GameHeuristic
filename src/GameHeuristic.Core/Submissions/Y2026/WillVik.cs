@@ -1,18 +1,19 @@
-using System;
+ using System;
+using System.Threading.Tasks.Sources;
 using GameHeuristic.Core;
 
 namespace GameHeuristic.Core.Submissions.Y2026;
 
 /// <summary>
 /// A sample student submission for the class of 2026.
-/// This bot greedily tries to build its own lines of 2 and 3, completely ignoring the opponent's moves.
+/// This bot greedily tries to build its own lines of 2 completely ignoring the opponent's moves.
 /// </summary>
-public class StudentHeuristic2026 : IHeuristic
+public class StudentHeuristic2026WV : IHeuristic
 {
-    public string Name => "Student 2026 - Greedy Builder";
+    public string Name => "WillVikReal";
 
     /// <summary>
-    /// This evaluation scores moves solely on building out rows of 2  It doesn't look at the opponent.
+    /// This evaluation scores moves solely on building out rows of 2.  It doesn't look at the opponent.
     ///
     /// Look at each cell on the board that start a winning position and calculate a score for each horizontal,
     /// vertical and diagonal line that could start there.  If there is an opponent piece in the line, it
@@ -24,31 +25,44 @@ public class StudentHeuristic2026 : IHeuristic
     public double Evaluate(Player[,] board, Player player)
     {
         double score = 0;
+        Player opponent;
+        if(player == Player.Red)
+        {
+            opponent = Player.Yellow;
+        }
+        else
+        {
+            opponent = Player.Red;
+        }
+        
 
         // Evaluate all possible 4-slot windows (horizontal, vertical, diagonal)
-        
-        // Horizontal - for each row on the board, look at the lines of 4 to the right and calculate a score
-        // 
-        // Only the windows marked X will be included in the loop
-        //
-        //   0 1 2 3 4 5 6
-        //  +-------------
-        // 0|X X X X - - -  
-        // 1|X X X X - - - 
-        // 2|X X X X - - -
-        // 3|X X X X - - -
-        // 4|X X X X - - -
-        // 5|X X X X - - -
-        //
-        for (int r = 0; r < Board.Rows; r++)
-        {
-            for (int c = 0; c <= Board.Columns - 4; c++)
+
+            // Horizontal - for each row on the board, look at the lines of 4 to the right and calculate a score
+            // 
+            // Only the windows marked X will be included in the loop
+            //
+            //   0 1 2 3 4 5 6
+            //  +-------------
+            // 0|X X X X - - -  
+            // 1|X X X X - - - 
+            // 2|X X X X - - -
+            // 3|X X X X - - -
+            // 4|X X X X - - -
+            // 5|X X X X - - -
+            //
+            for (int r = 0; r < Board.Rows; r++)
             {
-                score += EvaluateWindow(
-                    board[r, c], board[r, c + 1], board[r, c + 2], board[r, c + 3], 
-                    player);
+                for (int c = 0; c <= Board.Columns - 4; c++)
+                {
+                    score += EvaluateWindow(
+                        board[r, c], board[r, c + 1], board[r, c + 2], board[r, c + 3],
+                        player);
+                    score -= EvaluateWindow(
+                        board[r, c], board[r, c + 1], board[r, c + 2], board[r, c + 3],
+                        opponent);
+                }
             }
-        }
 
         // Vertical - for each column on the board, look at the lines of 4 below and calculate a score
         // 
@@ -70,6 +84,9 @@ public class StudentHeuristic2026 : IHeuristic
                 score += EvaluateWindow(
                     board[r, c], board[r + 1, c], board[r + 2, c], board[r + 3, c], 
                     player);
+                score -= EvaluateWindow(
+                    board[r, c], board[r + 1, c], board[r + 2, c], board[r + 3, c],
+                    opponent);
             }
         }
 
@@ -93,6 +110,9 @@ public class StudentHeuristic2026 : IHeuristic
                 score += EvaluateWindow(
                     board[r, c], board[r + 1, c + 1], board[r + 2, c + 2], board[r + 3, c + 3], 
                     player);
+                score -= EvaluateWindow(
+                    board[r, c], board[r + 1, c + 1], board[r + 2, c + 2], board[r + 3, c + 3],
+                    opponent);
             }
         }
 
@@ -116,6 +136,9 @@ public class StudentHeuristic2026 : IHeuristic
                 score += EvaluateWindow(
                     board[r, c], board[r - 1, c + 1], board[r - 2, c + 2], board[r - 3, c + 3], 
                     player);
+                score -= EvaluateWindow(
+                    board[r, c], board[r - 1, c + 1], board[r - 2, c + 2], board[r - 3, c + 3],
+                    opponent);
             }
         }
 
@@ -127,9 +150,9 @@ public class StudentHeuristic2026 : IHeuristic
     /// line sent as parameters.
     ///
     /// Lines with two tokens score 10
-    /// Lines with four tokens score 10000 (maximum value)
+
     ///
-    /// It doesn't matter where the spaces are in the lines of two or three
+    /// It doesn't matter where the spaces are in the lines of two
     ///
     /// If there is an opponent token anywhere in the line, it's not a possible winner so is set to 0
     /// regardless of the number of player tokens
@@ -145,8 +168,17 @@ public class StudentHeuristic2026 : IHeuristic
         int playerCount = 0;
         int opponentCount = 0;
         int emptyCount = 0;
+        Player opponent;
+        if(player == Player.Red)
+        {
+            opponent = Player.Yellow;
+        }
+        else
+        {
+            opponent = Player.Red;
+        }
 
-        Player[] window = { p1, p2, p3, p4 };
+            Player[] window = { p1, p2, p3, p4 };
         foreach (Player p in window)
         {
             if (p == player) playerCount++;
@@ -154,12 +186,38 @@ public class StudentHeuristic2026 : IHeuristic
             else opponentCount++;
         }
 
-        // If the opponent has a piece in this window, we can't make a 4-in-a-row here.
-        if (opponentCount > 0) return 0;
-
-        if (playerCount == 4) return 10000;          // Win
-        if (playerCount == 2 && emptyCount == 2) return 10;  // Prioritize lines of 2
-        
-        return 0;
+        if (playerCount == 2 && opponentCount == 2)
+        {
+            return 0;
+        }
+        else if (playerCount == 4)
+        {
+            return 999999999;
+        }
+        else if(playerCount == 3 && emptyCount == 1)
+        {
+            return 200;
+        }
+        else if(playerCount == 2 && emptyCount == 2)
+        {
+            return 50;
+        }
+        else if(playerCount ==1 && emptyCount == 3)
+        {
+            return 1;
+        }
+        else if(opponentCount == 3 && emptyCount == 1)
+        {
+            return -200;
+        }
+        else if(opponentCount == 2 && emptyCount == 2)
+        {
+            return -50;
+        }
+        else
+        {
+            return 0;
+        }
     }
+
 }
