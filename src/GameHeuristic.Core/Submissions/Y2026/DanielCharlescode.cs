@@ -154,6 +154,8 @@ public class DanielCharlescode : IHeuristic
     /// <param name="p4"></param>
     /// <param name="player"></param>
     /// <returns></returns>
+    ///
+
     private double EvaluateWindow(Player p1, Player p2, Player p3, Player p4, Player player)
     {
         int playerCount = 0;
@@ -179,4 +181,5 @@ public class DanielCharlescode : IHeuristic
             0 => 0,
         };
     }
+    
 }
